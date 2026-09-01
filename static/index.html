@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI 유틸리티 툴박스</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="app-layout">
+      <aside class="sidebar" aria-label="도구 메뉴">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <div>
+            <strong>toolbox</strong>
+            <span>AI utility desk</span>
+          </div>
+        </div>
+        <div class="sidebar-intro">
+          <span class="eyebrow">WORKSPACE 01</span>
+          <p>파일을 정리하고<br />새로운 형태로 바꿔보세요.</p>
+        </div>
+        <nav class="tool-nav" aria-label="도구 선택">
+          <button
+            class="menu-item active"
+            type="button"
+            data-target="extract-panel"
+          >
+            <span class="menu-index">01</span>
+            텍스트 추출기
+          </button>
+          <button class="menu-item" type="button" data-target="pdf-panel">
+            <span class="menu-index">02</span>
+            PDF 변환기
+          </button>
+          <button class="menu-item" type="button" data-target="youtube-panel">
+            <span class="menu-index">03</span>
+            유튜브 다운로드
+          </button>
+        </nav>
+        <div class="sidebar-foot">PRIVATE WORKSPACE <span>●</span></div>
+      </aside>
+
+      <section class="workspace">
+        <section
+          id="extract-panel"
+          class="tool-panel active"
+          aria-labelledby="extract-title"
+        >
+          <div class="panel-heading">
+            <span class="eyebrow">DOCUMENT / OCR</span>
+            <h1 id="extract-title">텍스트 추출기</h1>
+            <p>문서와 이미지에서 필요한 텍스트를 빠르게 꺼냅니다.</p>
+          </div>
+          <form id="extract-form" class="form">
+            <label class="upload-box">
+              <span class="upload-icon" aria-hidden="true">↥</span>
+              <span>파일을 놓거나 클릭해서 등록</span>
+              <small>TXT · PDF · DOCX · IMAGE</small>
+              <input
+                id="file-input"
+                name="file"
+                type="file"
+                accept=".txt,.md,.pdf,.docx,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff"
+                required
+              />
+            </label>
+            <button type="submit">
+              <span>텍스트 추출</span
+              ><span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+          </form>
+          <p id="message" class="message" role="status"></p>
+          <div id="result" class="result" hidden>
+            <div class="result-actions">
+              <a id="download-link" href="#">결과 다운로드</a>
+              <button id="reset-button" class="secondary" type="button">
+                초기화
+              </button>
+            </div>
+            <textarea id="result-text" readonly></textarea>
+          </div>
+        </section>
+
+        <section
+          id="pdf-panel"
+          class="tool-panel"
+          aria-labelledby="pdf-title"
+          hidden
+        >
+          <div class="panel-heading">
+            <span class="eyebrow">DOCUMENT / CONVERT</span>
+            <h1 id="pdf-title">PDF 변환기</h1>
+            <p>PDF를 원하는 포맷으로 바꾸고 페이지를 정리합니다.</p>
+          </div>
+          <form id="pdf-form" class="form">
+            <label class="field">
+              <span>작업 선택</span>
+              <select id="pdf-mode" name="mode">
+                <option value="to-images">이미지 ZIP</option>
+                <option value="to-docx">Word 문서</option>
+                <option value="to-xlsx">Excel 문서</option>
+                <option value="from-file">다른 파일을 PDF로</option>
+                <option value="merge">PDF 병합</option>
+                <option value="split">PDF 분할</option>
+                <option value="compress">PDF 압축</option>
+              </select>
+            </label>
+
+            <label id="single-file-field" class="upload-box">
+              <span id="single-file-label">PDF 파일</span>
+              <input
+                id="pdf-file-input"
+                name="file"
+                type="file"
+                accept=".pdf"
+                required
+              />
+            </label>
+
+            <label id="merge-file-field" class="upload-box" hidden>
+              <span>병합할 PDF 파일</span>
+              <input
+                id="pdf-merge-input"
+                name="files"
+                type="file"
+                accept=".pdf"
+                multiple
+              />
+            </label>
+            <div id="merge-file-summary" class="file-summary" hidden>
+              <div class="file-summary-header">
+                <span>선택한 PDF</span>
+                <button
+                  id="clear-merge-files"
+                  class="secondary small"
+                  type="button"
+                >
+                  비우기
+                </button>
+              </div>
+              <ul id="merge-file-list" class="file-list"></ul>
+            </div>
+
+            <div id="split-options" class="split-options" hidden>
+              <label class="field">
+                <span>시작 페이지</span>
+                <input
+                  id="start-page"
+                  name="start_page"
+                  type="number"
+                  min="1"
+                  value="1"
+                />
+              </label>
+              <label class="field">
+                <span>끝 페이지</span>
+                <input
+                  id="end-page"
+                  name="end_page"
+                  type="number"
+                  min="1"
+                  value="1"
+                />
+              </label>
+            </div>
+
+            <button type="submit">
+              <span>변환 실행</span
+              ><span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+          </form>
+          <p id="pdf-message" class="message" role="status"></p>
+          <div id="pdf-result" class="result" hidden>
+            <div class="result-actions">
+              <a id="pdf-download-link" href="#">결과 다운로드</a>
+              <button id="pdf-reset-button" class="secondary" type="button">
+                초기화
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="youtube-panel"
+          class="tool-panel"
+          aria-labelledby="youtube-title"
+          hidden
+        >
+          <div class="panel-heading">
+            <span class="eyebrow">MEDIA / SOON</span>
+            <h1 id="youtube-title">유튜브 다운로드</h1>
+            <p>미디어 저장 기능을 준비하고 있습니다.</p>
+          </div>
+          <form class="form">
+            <label class="field">
+              <span>유튜브 URL</span>
+              <input
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                disabled
+              />
+            </label>
+            <button type="button" disabled>다운로드 준비 중</button>
+          </form>
+        </section>
+      </section>
+    </main>
+    <script src="/static/app.js?v=20260826-menu-layout"></script>
+  </body>
+</html>

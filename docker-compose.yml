@@ -1,0 +1,22 @@
+services:
+  ai-toolbox:
+    build: .
+    container_name: ai-toolbox
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_HOST: ${APP_HOST:-0.0.0.0}
+      APP_PORT: ${APP_PORT:-8000}
+      HOST_PORT: ${HOST_PORT:-8010}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/tmp/ai-toolbox/uploads}
+      RESULT_DIR: ${RESULT_DIR:-/tmp/ai-toolbox/results}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-100}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "${HOST_PORT:-8010}:${APP_PORT:-8000}"
+    volumes:
+      - ./uploads:/tmp/ai-toolbox/uploads
+      - ./results:/tmp/ai-toolbox/results
+    restart: unless-stopped
