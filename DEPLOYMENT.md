@@ -70,16 +70,22 @@ RESULT_RETENTION_HOURS=24
 CLEANUP_INTERVAL_MINUTES=60
 YOUTUBE_MAX_DOWNLOAD_MB=500
 YOUTUBE_MAX_DURATION_SECONDS=7200
-NPM_NETWORK=npm_default
+NPM_NETWORK=nginx-proxy-manager_default
+CONTAINER_CPU_LIMIT=2.0
+CONTAINER_MEMORY_LIMIT=2g
 ```
 
 `NPM_NETWORK`에는 실제 Nginx Proxy Manager 컨테이너가 연결된 Docker 네트워크
-이름을 사용해야 합니다. 다음 명령으로 후보를 확인합니다.
+이름을 사용해야 합니다. 현재 서버에서 확인한 값은
+`nginx-proxy-manager_default`입니다. 다음 명령으로 다시 확인할 수 있습니다.
 
 ```bash
 docker network ls --format '{{.Name}}'
 docker inspect <NPM_컨테이너명> --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}'
 ```
+
+`CONTAINER_CPU_LIMIT`와 `CONTAINER_MEMORY_LIMIT`는 여러 서비스가 함께 실행되는
+VPS에서 이 앱이 사용할 수 있는 최대 자원을 제한합니다. 서버 사양에 따라 조정하세요.
 
 `uploads/`와 `results/`는 자동 생성되며, 결과 파일은 기본 24시간 뒤 삭제됩니다.
 
@@ -97,6 +103,9 @@ curl -fsS http://127.0.0.1:8010/health
 
 상태 확인 결과가 `{"status":"ok"}`이고 `ps`의 상태가 `healthy`이면 앱이
 정상적으로 실행된 것입니다.
+
+Portainer에서 실행 상태를 볼 수 있지만, 이 프로젝트는 기본 Compose와 운영
+오버라이드를 함께 병합하므로 최초 배포와 업데이트는 위 CLI 명령 사용을 권장합니다.
 
 ## 5. Nginx Proxy Manager 연결
 
@@ -123,6 +132,9 @@ HTTPS 접속이 정상임을 먼저 확인한 후 HSTS를 활성화합니다.
 
 개인용 서비스이므로 NPM의 `Access Lists`에서 Basic Auth 계정을 만들거나 접근
 가능한 IP 대역을 제한하고, 해당 Access List를 Proxy Host에 연결합니다.
+
+운영 공개 전에는 Access List 연결, SSL `Force SSL`, 업로드 제한 설정을 모두
+확인해야 합니다.
 
 ## 6. 배포 후 점검
 

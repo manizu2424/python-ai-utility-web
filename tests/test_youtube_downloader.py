@@ -210,7 +210,7 @@ def test_youtube_download_api_returns_result(tmp_path, monkeypatch) -> None:
             mode="audio",
         )
 
-    monkeypatch.setattr("app.main.download_youtube", fake_download)
+    monkeypatch.setattr("app.routers.youtube.download_youtube", fake_download)
     with TestClient(app) as client:
         response = client.post(
             "/api/youtube/download",

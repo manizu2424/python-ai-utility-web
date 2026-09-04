@@ -125,7 +125,7 @@ def test_youtube_transcript_api_returns_downloadable_text(tmp_path, monkeypatch)
             text="추출한 자막",
         )
 
-    monkeypatch.setattr("app.main.extract_youtube_transcript", fake_transcript)
+    monkeypatch.setattr("app.routers.youtube.extract_youtube_transcript", fake_transcript)
     with TestClient(app) as client:
         response = client.post(
             "/api/youtube/transcript",

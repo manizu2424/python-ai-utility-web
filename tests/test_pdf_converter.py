@@ -1,4 +1,6 @@
+import asyncio
 from io import BytesIO
+from threading import get_ident
 from zipfile import ZipFile
 
 import fitz
@@ -8,6 +10,7 @@ from docx import Document
 
 from app.config import get_settings
 from app.main import app
+from app.routers.pdf import save_conversion_result
 
 
 @pytest.fixture
@@ -200,3 +203,30 @@ def test_compress_pdf_returns_readable_pdf(client: TestClient) -> None:
     with fitz.open(stream=content, filetype="pdf") as document:
         assert document.page_count == 1
         assert "compress me" in document[0].get_text()
+
+
+def test_conversion_factory_runs_outside_event_loop(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("RESULT_DIR", str(tmp_path / "results"))
+    get_settings.cache_clear()
+    worker_thread_id = None
+
+    def make_content() -> bytes:
+        nonlocal worker_thread_id
+        worker_thread_id = get_ident()
+        return b"converted"
+
+    async def convert() -> tuple[int, dict[str, object]]:
+        event_loop_thread_id = get_ident()
+        payload = await save_conversion_result(
+            make_content,
+            ".pdf",
+            "완료",
+        )
+        return event_loop_thread_id, payload
+
+    event_loop_thread_id, payload = asyncio.run(convert())
+
+    assert worker_thread_id is not None
+    assert worker_thread_id != event_loop_thread_id
+    assert payload["download_url"].startswith("/api/results/")
+    get_settings.cache_clear()

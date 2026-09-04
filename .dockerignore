@@ -1,5 +1,9 @@
 .env
 .venv
+.git
+.github
+.agents
+.codex
 __pycache__
 .pytest_cache
 *.pyc
@@ -7,3 +11,7 @@ uploads
 results
 logs
 .DS_Store
+tests
+pytest.ini
+*.md
+*.png

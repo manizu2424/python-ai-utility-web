@@ -40,4 +40,4 @@ async def run_cleanup_loop(settings: Settings) -> None:
 
     while True:
         await asyncio.sleep(interval_seconds)
-        cleanup_runtime_files(settings)
+        await asyncio.to_thread(cleanup_runtime_files, settings)

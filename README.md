@@ -39,6 +39,10 @@ docker compose up --build
 VPS 운영 배포, Nginx Proxy Manager, HTTPS, 업데이트 및 롤백 절차는
 [`DEPLOYMENT.md`](DEPLOYMENT.md)를 참고하세요.
 
+현재 서버의 Nginx Proxy Manager 네트워크 이름은
+`nginx-proxy-manager_default`이며, 운영 배포 시 `compose.production.yml`을 함께
+적용합니다.
+
 ## 테스트
 
 ```bash
@@ -62,6 +66,7 @@ pytest
 
 ```text
 app/              FastAPI 앱과 서비스 로직
+app/routers/      텍스트, PDF, YouTube, 결과 다운로드 API 라우터
 app/services/     파일 저장, 변환, 추출 및 정리 기능
 static/           프론트엔드 정적 자산
 tests/            pytest 테스트

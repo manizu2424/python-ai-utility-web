@@ -2,6 +2,9 @@ services:
   ai-toolbox:
     environment:
       APP_ENV: production
+    cpus: ${CONTAINER_CPU_LIMIT:-2.0}
+    mem_limit: ${CONTAINER_MEMORY_LIMIT:-2g}
+    pids_limit: 256
     networks:
       - default
       - npm_proxy
@@ -9,4 +12,4 @@ services:
 networks:
   npm_proxy:
     external: true
-    name: ${NPM_NETWORK:-npm_default}
+    name: ${NPM_NETWORK:-nginx-proxy-manager_default}
