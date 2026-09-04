@@ -49,8 +49,8 @@ docker compose version
 
 ```bash
 cd /home/docker
-git clone https://github.com/manizu2424/python-ai-utility-web.git
-cd /home/docker/python-ai-utility-web
+git clone https://github.com/manizu2424/python-ai-utility-web.git pytool
+cd /home/docker/pytool
 cp .env.example .env
 chmod 600 .env
 ```
@@ -95,7 +95,7 @@ VPS에서 이 앱이 사용할 수 있는 최대 자원을 제한합니다. 서�
 운영 오버라이드를 포함해 이미지를 빌드하고 컨테이너를 시작합니다.
 
 ```bash
-cd /home/docker/python-ai-utility-web
+cd /home/docker/pytool
 docker compose -f docker-compose.yml -f compose.production.yml config --quiet
 docker compose -f docker-compose.yml -f compose.production.yml up -d --build
 docker compose -f docker-compose.yml -f compose.production.yml ps
@@ -158,7 +158,7 @@ docker compose -f docker-compose.yml -f compose.production.yml logs --tail=100 a
 배포 전 현재 커밋을 기록하면 문제 발생 시 되돌리기 쉽습니다.
 
 ```bash
-cd /home/docker/python-ai-utility-web
+cd /home/docker/pytool
 git rev-parse --short HEAD
 git pull --ff-only origin main
 docker compose -f docker-compose.yml -f compose.production.yml up -d --build
@@ -169,7 +169,7 @@ curl -fsS http://127.0.0.1:8010/health
 ## 8. 재시작 및 장애 확인
 
 ```bash
-cd /home/docker/python-ai-utility-web
+cd /home/docker/pytool
 docker compose -f docker-compose.yml -f compose.production.yml restart ai-toolbox
 docker compose -f docker-compose.yml -f compose.production.yml logs --tail=200 ai-toolbox
 docker compose -f docker-compose.yml -f compose.production.yml ps
@@ -190,7 +190,7 @@ docker compose -f docker-compose.yml -f compose.production.yml up -d --build
 업데이트 전 기록한 정상 커밋으로 전환한 뒤 이미지를 다시 빌드합니다.
 
 ```bash
-cd /home/docker/python-ai-utility-web
+cd /home/docker/pytool
 git fetch origin
 git switch --detach <정상_커밋_해시>
 docker compose -f docker-compose.yml -f compose.production.yml up -d --build
