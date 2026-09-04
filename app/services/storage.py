@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
+from zipfile import BadZipFile, ZipFile
 
 from fastapi import HTTPException, UploadFile, status
 
@@ -22,10 +23,15 @@ def ensure_runtime_dirs(settings: Settings) -> None:
 
 MEDIA_TYPES = {
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".m4a": "audio/mp4",
+    ".mkv": "video/x-matroska",
+    ".mp3": "audio/mpeg",
+    ".mp4": "video/mp4",
     ".pdf": "application/pdf",
     ".txt": "text/plain; charset=utf-8",
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ".zip": "application/zip",
+    ".webm": "video/webm",
 }
 
 
@@ -49,6 +55,30 @@ def validate_extension(
             detail=f"지원하지 않는 파일 형식입니다. 지원 형식: {supported}",
         )
     return extension
+
+
+def validate_file_content(path: Path, extension: str) -> None:
+    """Check structured uploads so renamed files are rejected early."""
+    try:
+        if extension == ".pdf":
+            with path.open("rb") as source:
+                if b"%PDF-" not in source.read(1024):
+                    raise ValueError("missing PDF header")
+        elif extension == ".docx":
+            with ZipFile(path) as archive:
+                members = set(archive.namelist())
+                if "[Content_Types].xml" not in members or "word/document.xml" not in members:
+                    raise ValueError("missing DOCX members")
+        elif extension in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}:
+            from PIL import Image
+
+            with Image.open(path) as image:
+                image.verify()
+    except (BadZipFile, OSError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"파일 내용이 {extension} 형식과 일치하지 않습니다.",
+        ) from exc
 
 
 async def save_upload(
@@ -89,6 +119,12 @@ async def save_upload(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="빈 파일은 처리할 수 없습니다.",
         )
+
+    try:
+        validate_file_content(stored_path, extension)
+    except HTTPException:
+        stored_path.unlink(missing_ok=True)
+        raise
 
     return StoredFile(
         original_filename=Path(upload.filename).name,

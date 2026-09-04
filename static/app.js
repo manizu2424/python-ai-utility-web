@@ -24,6 +24,20 @@ const pdfResult = document.querySelector("#pdf-result");
 const pdfDownloadLink = document.querySelector("#pdf-download-link");
 const pdfResetButton = document.querySelector("#pdf-reset-button");
 const pdfButton = pdfForm.querySelector("button[type='submit']");
+const youtubeForm = document.querySelector("#youtube-form");
+const youtubeUrl = document.querySelector("#youtube-url");
+const youtubeMode = document.querySelector("#youtube-mode");
+const youtubeLanguageField = document.querySelector("#youtube-language-field");
+const youtubeLanguage = document.querySelector("#youtube-language");
+const youtubeMessage = document.querySelector("#youtube-message");
+const youtubeResult = document.querySelector("#youtube-result");
+const youtubeResultTitle = document.querySelector("#youtube-result-title");
+const youtubeResultMeta = document.querySelector("#youtube-result-meta");
+const youtubeResultText = document.querySelector("#youtube-result-text");
+const youtubeDownloadLink = document.querySelector("#youtube-download-link");
+const youtubeResetButton = document.querySelector("#youtube-reset-button");
+const youtubeButton = youtubeForm.querySelector("button[type='submit']");
+const youtubeSubmitLabel = document.querySelector("#youtube-submit-label");
 const menuItems = document.querySelectorAll(".menu-item");
 const toolPanels = document.querySelectorAll(".tool-panel");
 let mergeFiles = [];
@@ -287,7 +301,102 @@ pdfResetButton.addEventListener("click", () => {
   pdfMode.focus();
 });
 
+youtubeMode.addEventListener("change", () => {
+  syncYoutubeMode();
+});
+
+function syncYoutubeMode() {
+  const isTextMode = youtubeMode.value === "transcript";
+  youtubeLanguageField.hidden = !isTextMode;
+  youtubeSubmitLabel.textContent = isTextMode
+    ? "자막 추출 실행"
+    : "다운로드 실행";
+  youtubeResult.hidden = true;
+  youtubeResultText.hidden = true;
+  setYoutubeMessage("", false);
+}
+
+youtubeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const url = youtubeUrl.value.trim();
+  if (!url) {
+    setYoutubeMessage("유튜브 URL을 입력하세요.", true);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("url", url);
+  const isTextMode = youtubeMode.value === "transcript";
+  if (isTextMode) {
+    formData.append("language", youtubeLanguage.value);
+  } else {
+    formData.append("mode", youtubeMode.value);
+  }
+
+  const endpoint = isTextMode
+    ? "/api/youtube/transcript"
+    : "/api/youtube/download";
+
+  youtubeButton.disabled = true;
+  youtubeResult.hidden = true;
+  youtubeResultText.hidden = true;
+  setYoutubeMessage(
+    isTextMode
+      ? "자막을 가져와 처리 중입니다. 잠시 기다려 주세요."
+      : "다운로드 중입니다. 영상 길이에 따라 시간이 걸릴 수 있습니다.",
+    false,
+  );
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      body: formData,
+    });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setYoutubeMessage(payload.detail || "유튜브 다운로드에 실패했습니다.", true);
+      return;
+    }
+
+    youtubeResultTitle.textContent = payload.title || "YouTube download";
+    youtubeResultMeta.textContent = [
+      payload.language ? `자막 ${payload.language}` : "",
+      (payload.extension || "").replace(".", "").toUpperCase(),
+      Number.isFinite(payload.size) ? formatFileSize(payload.size) : "",
+      Number.isFinite(payload.characters) ? `${payload.characters}자` : "",
+      formatDuration(payload.duration),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    youtubeResultText.value = payload.text || "";
+    youtubeResultText.hidden = !isTextMode;
+    youtubeDownloadLink.href = payload.download_url;
+    youtubeResult.hidden = false;
+    setYoutubeMessage(payload.message || "다운로드가 완료되었습니다.", false);
+  } catch {
+    setYoutubeMessage("서버 요청에 실패했습니다.", true);
+  } finally {
+    youtubeButton.disabled = false;
+  }
+});
+
+youtubeResetButton.addEventListener("click", () => {
+  youtubeForm.reset();
+  youtubeResultTitle.textContent = "";
+  youtubeResultMeta.textContent = "";
+  youtubeResultText.value = "";
+  youtubeResultText.hidden = true;
+  youtubeDownloadLink.href = "#";
+  youtubeResult.hidden = true;
+  setYoutubeMessage("", false);
+  syncYoutubeMode();
+  youtubeUrl.focus();
+});
+
 syncPdfMode();
+syncYoutubeMode();
 
 function setMessage(text, isError) {
   message.textContent = text;
@@ -297,4 +406,28 @@ function setMessage(text, isError) {
 function setPdfMessage(text, isError) {
   pdfMessage.textContent = text;
   pdfMessage.classList.toggle("error", isError);
+}
+
+function setYoutubeMessage(text, isError) {
+  youtubeMessage.textContent = text;
+  youtubeMessage.classList.toggle("error", isError);
+}
+
+function formatFileSize(size) {
+  if (!Number.isFinite(size)) {
+    return "";
+  }
+  if (size < 1024 * 1024) {
+    return `${Math.max(1, Math.round(size / 1024))}KB`;
+  }
+  return `${(size / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+function formatDuration(duration) {
+  if (!Number.isFinite(duration)) {
+    return "";
+  }
+  const minutes = Math.floor(duration / 60);
+  const seconds = Math.floor(duration % 60);
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }

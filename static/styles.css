@@ -331,6 +331,17 @@ button:disabled {
   color: #b42318;
 }
 
+.usage-note,
+.result-meta {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.usage-note {
+  margin: 0;
+}
+
 .result {
   display: grid;
   gap: 12px;

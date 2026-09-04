@@ -4,6 +4,7 @@ from zipfile import ZipFile
 import fitz
 import pytest
 from fastapi.testclient import TestClient
+from docx import Document
 
 from app.config import get_settings
 from app.main import app
@@ -26,6 +27,14 @@ def make_pdf(text: str) -> bytes:
     content = document.tobytes()
     document.close()
     return content
+
+
+def make_docx(text: str) -> bytes:
+    document = Document()
+    document.add_paragraph(text)
+    buffer = BytesIO()
+    document.save(buffer)
+    return buffer.getvalue()
 
 
 def upload_pdf(client: TestClient, endpoint: str, content: bytes) -> dict:
@@ -94,6 +103,41 @@ def test_image_file_to_pdf_returns_pdf(client: TestClient) -> None:
         assert document.page_count == 1
 
 
+def test_docx_file_to_pdf_returns_pdf(client: TestClient) -> None:
+    response = client.post(
+        "/api/pdf/from-file",
+        files={
+            "file": (
+                "sample.docx",
+                make_docx("hello from docx"),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    content = download_result(client, response.json())
+    with fitz.open(stream=content, filetype="pdf") as document:
+        assert document.page_count == 1
+        assert "hello from docx" in document[0].get_text()
+
+
+def test_invalid_docx_to_pdf_is_rejected(client: TestClient) -> None:
+    response = client.post(
+        "/api/pdf/from-file",
+        files={
+            "file": (
+                "broken.docx",
+                b"not a docx file",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert "파일 내용" in response.json()["detail"]
+
+
 def test_file_to_pdf_rejects_pdf_input(client: TestClient) -> None:
     response = client.post(
         "/api/pdf/from-file",
@@ -147,3 +191,12 @@ def test_split_pdf_rejects_invalid_range(client: TestClient) -> None:
 
     assert response.status_code == 422
     assert "페이지 범위" in response.json()["detail"]
+
+
+def test_compress_pdf_returns_readable_pdf(client: TestClient) -> None:
+    payload = upload_pdf(client, "/api/pdf/compress", make_pdf("compress me"))
+    content = download_result(client, payload)
+
+    with fitz.open(stream=content, filetype="pdf") as document:
+        assert document.page_count == 1
+        assert "compress me" in document[0].get_text()

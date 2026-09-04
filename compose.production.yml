@@ -1,0 +1,12 @@
+services:
+  ai-toolbox:
+    environment:
+      APP_ENV: production
+    networks:
+      - default
+      - npm_proxy
+
+networks:
+  npm_proxy:
+    external: true
+    name: ${NPM_NETWORK:-npm_default}

@@ -188,24 +188,62 @@
           hidden
         >
           <div class="panel-heading">
-            <span class="eyebrow">MEDIA / SOON</span>
+            <span class="eyebrow">MEDIA / DOWNLOAD</span>
             <h1 id="youtube-title">유튜브 다운로드</h1>
-            <p>미디어 저장 기능을 준비하고 있습니다.</p>
+            <p>단일 영상, MP3 음원 또는 자막 텍스트를 저장합니다.</p>
           </div>
-          <form class="form">
+          <form id="youtube-form" class="form">
             <label class="field">
               <span>유튜브 URL</span>
               <input
+                id="youtube-url"
+                name="url"
                 type="url"
                 placeholder="https://www.youtube.com/watch?v=..."
-                disabled
+                autocomplete="off"
+                required
               />
             </label>
-            <button type="button" disabled>다운로드 준비 중</button>
+            <label class="field">
+              <span>저장 형식</span>
+              <select id="youtube-mode" name="mode">
+                <option value="video">영상 · 최대 1080p</option>
+                <option value="audio">음원 · MP3 192kbps</option>
+                <option value="transcript">자막 텍스트 추출</option>
+              </select>
+            </label>
+            <label id="youtube-language-field" class="field" hidden>
+              <span>자막 언어</span>
+              <select id="youtube-language" name="language">
+                <option value="auto">자동 · 한국어 우선</option>
+                <option value="ko">한국어</option>
+                <option value="en">영어</option>
+              </select>
+            </label>
+            <p class="usage-note">
+              본인이 저장할 권한이 있는 공개 콘텐츠에만 사용하세요. 재생목록과
+              2시간 초과 영상은 지원하지 않습니다.
+            </p>
+            <button type="submit">
+              <span id="youtube-submit-label">다운로드 실행</span
+              ><span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
           </form>
+          <p id="youtube-message" class="message" role="status"></p>
+          <div id="youtube-result" class="result" hidden>
+            <strong id="youtube-result-title"></strong>
+            <span id="youtube-result-meta" class="result-meta"></span>
+            <div class="result-actions">
+              <a id="youtube-download-link" href="#">결과 다운로드</a>
+              <button id="youtube-reset-button" class="secondary" type="button">
+                초기화
+              </button>
+            </div>
+            <textarea id="youtube-result-text" readonly hidden></textarea>
+          </div>
         </section>
       </section>
     </main>
-    <script src="/static/app.js?v=20260826-menu-layout"></script>
+    <script src="/static/app.js?v=20260904-youtube-download"></script>
   </body>
 </html>

@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -44,6 +46,16 @@ def test_extract_text_rejects_unsupported_extension(client: TestClient) -> None:
     assert "지원하지 않는 파일 형식" in response.json()["detail"]
 
 
+def test_extract_text_rejects_file_with_mismatched_content(client: TestClient) -> None:
+    response = client.post(
+        "/api/extract-text",
+        files={"file": ("renamed.pdf", b"not really a PDF", "application/pdf")},
+    )
+
+    assert response.status_code == 400
+    assert "파일 내용" in response.json()["detail"]
+
+
 def test_extract_text_rejects_oversized_file(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
     monkeypatch.setenv("RESULT_DIR", str(tmp_path / "results"))
@@ -58,3 +70,26 @@ def test_extract_text_rejects_oversized_file(tmp_path, monkeypatch) -> None:
 
     assert response.status_code == 413
     assert "파일 크기" in response.json()["detail"]
+
+
+def test_extract_text_reports_missing_tesseract(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    import pytesseract
+    from PIL import Image
+
+    image_buffer = BytesIO()
+    Image.new("RGB", (20, 20), "white").save(image_buffer, format="PNG")
+
+    def raise_missing_tesseract(*args, **kwargs):
+        raise pytesseract.TesseractNotFoundError()
+
+    monkeypatch.setattr(pytesseract, "image_to_string", raise_missing_tesseract)
+    response = client.post(
+        "/api/extract-text",
+        files={"file": ("sample.png", image_buffer.getvalue(), "image/png")},
+    )
+
+    assert response.status_code == 422
+    assert "Tesseract OCR 실행 파일" in response.json()["detail"]

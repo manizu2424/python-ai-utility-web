@@ -2,8 +2,7 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from app.services.text_extractor import extract_docx_text
-from app.services.text_extractor import extract_pdf_text
+from app.services.text_extractor import TextExtractionError, extract_docx_text, extract_pdf_text
 
 
 class PdfConversionError(Exception):
@@ -153,7 +152,11 @@ def file_to_pdf(path: Path, extension: str) -> bytes:
         text = path.read_text(encoding="utf-8", errors="replace")
         return text_to_pdf(text, "텍스트 PDF 변환 결과")
     if extension == ".docx":
-        return text_to_pdf(extract_docx_text(path), "DOCX PDF 변환 결과")
+        try:
+            text = extract_docx_text(path)
+        except TextExtractionError as exc:
+            raise PdfConversionError(str(exc)) from exc
+        return text_to_pdf(text, "DOCX PDF 변환 결과")
     if extension in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}:
         return image_to_pdf(path)
     raise PdfConversionError(f"PDF로 변환할 수 없는 파일 형식입니다: {extension}")

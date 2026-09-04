@@ -43,10 +43,17 @@ class Settings:
     max_upload_mb: int
     upload_retention_hours: int
     result_retention_hours: int
+    cleanup_interval_minutes: int
+    youtube_max_download_mb: int
+    youtube_max_duration_seconds: int
 
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024
+
+    @property
+    def youtube_max_download_bytes(self) -> int:
+        return self.youtube_max_download_mb * 1024 * 1024
 
 
 @lru_cache
@@ -57,4 +64,9 @@ def get_settings() -> Settings:
         max_upload_mb=int(os.getenv("MAX_UPLOAD_MB", "100")),
         upload_retention_hours=int(os.getenv("UPLOAD_RETENTION_HOURS", "24")),
         result_retention_hours=int(os.getenv("RESULT_RETENTION_HOURS", "24")),
+        cleanup_interval_minutes=int(os.getenv("CLEANUP_INTERVAL_MINUTES", "60")),
+        youtube_max_download_mb=int(os.getenv("YOUTUBE_MAX_DOWNLOAD_MB", "500")),
+        youtube_max_duration_seconds=int(
+            os.getenv("YOUTUBE_MAX_DURATION_SECONDS", "7200")
+        ),
     )

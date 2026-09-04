@@ -8,6 +8,7 @@ WORKDIR /app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ffmpeg \
+        nodejs \
         tesseract-ocr \
         tesseract-ocr-kor \
     && rm -rf /var/lib/apt/lists/*
