@@ -23,8 +23,9 @@ uvicorn app.main:app --reload --port 8010
 
 브라우저에서 <http://localhost:8010>으로 접속합니다.
 
-유튜브 다운로드에는 `ffmpeg`, `ffprobe`가 필요합니다. Docker 이미지에는 필요한 도구와
-YouTube 추출용 Node.js가 포함되어 있습니다. 공개된 단일 영상 중 본인이 저장할 권한이
+유튜브 다운로드에는 `ffmpeg`, `ffprobe`와 JS 런타임 Deno 2.3 이상이 필요합니다.
+Docker 이미지에는 필요한 도구가 모두 포함되어 있습니다. 로컬에서 직접 실행할 때는
+`brew install deno` 등으로 Deno를 설치하세요. 공개된 단일 영상 중 본인이 저장할 권한이
 있는 콘텐츠에만 사용하세요.
 
 ## Docker 실행

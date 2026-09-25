@@ -216,7 +216,8 @@ pytesseract.image_to_string(image, lang="kor+eng")
 - [x] VPS(데이터센터 IP)에서 유튜브 접근이 차단되는 문제 대응 방식 결정: 가정용 회선(Mac mini) SOCKS5 프록시를 Tailscale로 경유
 - [x] 유튜브 다운로드·자막 추출에 `YOUTUBE_PROXY` 설정 지원 추가(테스트 포함)
 - [ ] Mac mini 프록시와 VPS Tailscale 구성(`DEPLOYMENT.md` 11절) 후 운영에서 영상·MP3·자막 검증
-- [ ] #3 Docker 이미지의 yt-dlp JS 런타임 구성 수정(deno 설치 또는 Node 22 이상 + `js_runtimes`) 후 실제 영상으로 영상·MP3·자막 검증
+- [x] #3 Docker 이미지의 yt-dlp JS 런타임 구성 수정: Node 20 제거, Deno 2.9.7 추가(로컬 컨테이너에서 JS 런타임 인식과 추출 경고 해소 확인)
+- [ ] #3 운영 배포 후 실제 영상으로 영상·MP3·자막 검증
 
 ### 문서 동기화
 
