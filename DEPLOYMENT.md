@@ -91,8 +91,6 @@ docker inspect <NPM_컨테이너명> --format '{{range $name, $_ := .NetworkSett
 `CONTAINER_CPU_LIMIT`와 `CONTAINER_MEMORY_LIMIT`는 여러 서비스가 함께 실행되는
 VPS에서 이 앱이 사용할 수 있는 최대 자원을 제한합니다. 서버 사양에 따라 조정하세요.
 
-`uploads/`와 `results/`는 자동 생성되며, 결과 파일은 기본 24시간 뒤 삭제됩니다.
-
 ## 4. 최초 실행
 
 운영 오버라이드를 포함해 이미지를 빌드하고 컨테이너를 시작합니다.
@@ -149,9 +147,6 @@ Proxy Host의 Details 탭에서 연결합니다.
 
 연결 후 인증 없이 `curl -s -o /dev/null -w '%{http_code}' https://<도메인>/`을 실행해
 `401`이 나오는지 확인합니다.
-
-운영 공개 전에는 Access List 연결, SSL `Force SSL`, 업로드 제한 설정을 모두
-확인해야 합니다.
 
 ## 6. 배포 후 점검
 
@@ -279,6 +274,7 @@ microsocks -i 100.x.y.z -p 1080 -u <사용자> -P <비밀번호>
   </array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
 </dict>
 </plist>
 ```
@@ -289,7 +285,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.youtube-proxy.plis
 launchctl print gui/$(id -u)/local.youtube-proxy | grep state
 ```
 
-Tailscale보다 먼저 시작되어 바인딩에 실패하더라도 `KeepAlive`가 다시 실행합니다.
+Tailscale보다 먼저 시작되어 바인딩에 실패하더라도 `KeepAlive`가 10초 간격(`ThrottleInterval`)으로 다시 실행합니다.
 시스템 설정의 에너지 항목에서 자동 잠자기를 끄거나 `sudo pmset -a sleep 0`을
 적용합니다.
 

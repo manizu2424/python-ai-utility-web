@@ -49,7 +49,9 @@
       ▼
 [FastAPI 컨테이너] ── 변환/추출 처리
       │
-      └─ 결과 파일 또는 추출 텍스트 반환
+      ├─ 결과 파일 또는 추출 텍스트 반환
+      │
+      └─ 유튜브 요청만 ── Tailscale ──▶ [집 Mac mini SOCKS5 프록시] ──▶ YouTube
 ```
 
 ---
@@ -69,7 +71,7 @@
 ## 6. 운영 시 참고사항 (개인용 기준)
 
 - **파일 자동 삭제**: 업로드/결과 파일은 처리 후 일정 시간 뒤 자동 삭제 (디스크 관리 목적)
-- **접근 제한**: 외부 공개 서비스가 아니므로 IP 화이트리스트 또는 간단한 Basic Auth 정도로 접근 제한 (본인 외 접근 방지)
+- **접근 제한**: 외부 공개 서비스가 아니므로 Nginx Proxy Manager Access List의 Basic Auth로 본인 외 접근을 막음 (`DEPLOYMENT.md` 5절)
 - **HTTPS**: Nginx Proxy Manager로 Let's Encrypt 인증서 적용
 - **유튜브 접근**: 데이터센터 IP는 유튜브가 차단하므로 가정용 회선(Mac mini)의 SOCKS5 프록시를 Tailscale로 경유 (`DEPLOYMENT.md` 11절)
 
@@ -78,6 +80,6 @@
 ## 7. 진행 현황
 
 - 2026-09-04: Phase 0~2 구현 완료, VPS 배포(Nginx Proxy Manager, Let's Encrypt HTTPS)
-- 2026-09-25: 개인 접근 제한(Basic Auth) 적용, 유튜브 JS 런타임(Deno)과 가정용 회선 프록시 지원 추가
+- 2026-09-25: 개인 접근 제한(Basic Auth) 적용, 유튜브 JS 런타임(Deno)과 가정용 회선 프록시 지원 추가, 앱 이름 통일, 테스트 보강, PDF 병합 화면 오류 수정
 
 남은 작업은 `TASKS.md`에서 관리한다.

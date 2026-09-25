@@ -40,9 +40,13 @@ docker compose up --build
 VPS 운영 배포, Nginx Proxy Manager, HTTPS, 업데이트 및 롤백 절차는
 [`DEPLOYMENT.md`](DEPLOYMENT.md)를 참고하세요.
 
-현재 서버의 Nginx Proxy Manager 네트워크 이름은
-`nginx-proxy-manager_default`이며, 운영 배포 시 `compose.production.yml`을 함께
-적용합니다.
+## 지원 형식
+
+- 텍스트 추출: `.txt`, `.md`, `.pdf`, `.docx`, 이미지 OCR(`.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`, `.tif`, `.tiff`)
+- PDF 생성 입력: `.txt`, `.md`, `.docx`와 위 이미지 형식
+- PDF 변환 결과: `.zip`(페이지 이미지), `.docx`, `.xlsx`, `.pdf`
+- 유튜브 다운로드 결과: `.mp4`, `.webm`, `.mkv`, `.mp3`, `.m4a`
+- 유튜브 자막 결과: `.txt`
 
 ## 테스트
 

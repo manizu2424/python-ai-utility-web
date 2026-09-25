@@ -4,14 +4,7 @@
 
 ## 1. Docker로 실행
 
-프로젝트 루트에서 환경 변수 파일을 만들고 컨테이너를 실행합니다.
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-실행 후 다음 주소로 접속합니다.
+[`README.md`](README.md)의 "Docker 실행" 절차로 컨테이너를 실행한 뒤 다음 주소로 접속합니다.
 
 - 웹 화면: <http://localhost:8010>
 - 상태 확인: <http://localhost:8010/health>
@@ -62,21 +55,11 @@ source .venv/bin/activate
 pytest
 ```
 
-2026-09-25 기준 자동 테스트는 총 51개입니다.
+2026-09-25 기준 자동 테스트는 총 52개입니다.
 
 ## 4. 결과 파일 보관
 
-업로드 파일과 생성 결과는 각각 `uploads/`, `results/`에 저장됩니다. 기본 보관 기간은 24시간이며 앱 시작 시와 실행 중 60분 간격으로 만료 파일이 정리됩니다.
-
-다음 환경 변수로 정책을 변경할 수 있습니다.
-
-```dotenv
-UPLOAD_RETENTION_HOURS=24
-RESULT_RETENTION_HOURS=24
-CLEANUP_INTERVAL_MINUTES=60
-YOUTUBE_MAX_DOWNLOAD_MB=500
-YOUTUBE_MAX_DURATION_SECONDS=7200
-```
+업로드 파일과 생성 결과는 기본 24시간 뒤 자동으로 삭제됩니다. 보관 기간과 정리 주기를 바꾸는 환경 변수는 [`README.md`](README.md)의 "환경 변수"와 `.env.example`을 참고하세요.
 
 ## 5. 종료
 
