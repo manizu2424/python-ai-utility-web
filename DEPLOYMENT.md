@@ -310,3 +310,45 @@ docker exec ai-toolbox python -c "import socket; socket.create_connection(('100.
 컨테이너에서 프록시에 연결되지 않으면 VPS에서 `tailscale status`로 Mac mini가
 보이는지 먼저 확인합니다. 연결되면 웹 화면에서 짧은 공개 영상으로 영상·MP3·자막을
 각각 확인합니다. `YOUTUBE_PROXY`를 비우면 다시 직접 연결합니다.
+
+### 11.4 Mac mini 영향과 프록시 관리
+
+프록시는 Tailscale 주소의 `1080` 포트로 들어오는 연결만 처리합니다. macOS 시스템
+프록시, DNS, 라우팅, Tailscale 설정은 바꾸지 않으므로 Mac mini의 개발 작업과
+원격 접속(SSH, 화면 공유, VS Code Remote 등)에는 영향이 없습니다. 대기 중 자원
+사용은 CPU 0%, 메모리 약 5MB입니다.
+
+다만 다음 사항은 알아 둡니다.
+
+- 운영 사이트에서 유튜브를 받는 동안 데이터가 "유튜브 → Mac mini → VPS"로 흐르므로
+  집 회선의 업로드 대역폭을 사용합니다. 큰 영상을 받는 동안 원격 접속이 느려질 수 있습니다.
+- 유튜브 요청이 집 IP에서 나가므로 짧은 시간에 많이 받으면 집에서도 유튜브 봇 확인이
+  나타날 수 있습니다.
+- 다른 프로그램이 `0.0.0.0:1080`을 사용하려 하면 충돌하므로 프록시 포트를 바꿉니다.
+- 재시작 후 로그인하기 전까지는 LaunchAgent가 실행되지 않아 유튜브 기능이 실패합니다.
+
+프록시 관리 명령은 다음과 같습니다. 프록시를 꺼도 운영 사이트의 유튜브 기능만
+실패하고 나머지 기능은 영향을 받지 않습니다.
+
+```bash
+# 지금만 중지 (다음 로그인 때 다시 실행됨)
+launchctl bootout gui/$(id -u)/local.youtube-proxy
+
+# 계속 꺼 두기 (재부팅·재로그인 후에도 실행 안 됨)
+launchctl disable gui/$(id -u)/local.youtube-proxy
+launchctl bootout gui/$(id -u)/local.youtube-proxy
+
+# 다시 켜기
+launchctl enable gui/$(id -u)/local.youtube-proxy
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.youtube-proxy.plist
+
+# 상태 확인
+launchctl print gui/$(id -u)/local.youtube-proxy | grep -E "^\s*state"
+
+# 완전히 제거 (중지한 뒤)
+rm ~/Library/LaunchAgents/local.youtube-proxy.plist
+brew uninstall microsocks
+```
+
+완전히 제거한 뒤에는 VPS `.env`의 `YOUTUBE_PROXY` 값을 비우고 컨테이너를 다시
+만들어 직접 연결로 되돌립니다. 이 경우 VPS에서는 유튜브 기능이 동작하지 않습니다.
