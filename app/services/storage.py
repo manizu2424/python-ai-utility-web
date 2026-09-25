@@ -28,6 +28,7 @@ MEDIA_TYPES = {
     ".mp3": "audio/mpeg",
     ".mp4": "video/mp4",
     ".pdf": "application/pdf",
+    ".png": "image/png",
     ".txt": "text/plain; charset=utf-8",
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ".zip": "application/zip",

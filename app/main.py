@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from app.config import get_settings
-from app.routers import pdf, results, text, youtube
+from app.routers import image, pdf, results, text, youtube
 from app.services.cleanup import cleanup_runtime_files, run_cleanup_loop
 
 
@@ -34,6 +34,7 @@ app = FastAPI(title="Python AI Util", lifespan=lifespan)
 app.include_router(text.router)
 app.include_router(pdf.router)
 app.include_router(youtube.router)
+app.include_router(image.router)
 app.include_router(results.router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
