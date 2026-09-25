@@ -72,6 +72,8 @@ def extract_youtube_transcript(
         "writeautomaticsub": True,
         "writesubtitles": True,
     }
+    if settings.youtube_proxy:
+        options["proxy"] = settings.youtube_proxy
 
     try:
         with YoutubeDL(options) as downloader:

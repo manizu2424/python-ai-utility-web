@@ -61,6 +61,9 @@ pytest
 `CLEANUP_INTERVAL_MINUTES`로 변경할 수 있습니다.
 유튜브 결과 크기와 영상 길이 제한은 `YOUTUBE_MAX_DOWNLOAD_MB`,
 `YOUTUBE_MAX_DURATION_SECONDS`로 설정합니다.
+VPS처럼 데이터센터 IP에서 유튜브 접근이 차단되는 환경에서는 `YOUTUBE_PROXY`에
+가정용 회선의 SOCKS5 프록시 주소를 지정합니다. 설정 방법은
+[`DEPLOYMENT.md`](DEPLOYMENT.md) 11절을 참고하세요.
 
 ## 프로젝트 구조
 

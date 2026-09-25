@@ -46,6 +46,8 @@ class Settings:
     cleanup_interval_minutes: int
     youtube_max_download_mb: int
     youtube_max_duration_seconds: int
+    # Route yt-dlp through e.g. a residential SOCKS proxy; YouTube blocks datacenter IPs.
+    youtube_proxy: str | None = None
 
     @property
     def max_upload_bytes(self) -> int:
@@ -69,4 +71,5 @@ def get_settings() -> Settings:
         youtube_max_duration_seconds=int(
             os.getenv("YOUTUBE_MAX_DURATION_SECONDS", "7200")
         ),
+        youtube_proxy=os.getenv("YOUTUBE_PROXY", "").strip() or None,
     )

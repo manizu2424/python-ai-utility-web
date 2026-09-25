@@ -13,7 +13,11 @@ from app.services.youtube_downloader import (
 )
 
 
-def make_settings(tmp_path, max_download_mb: int = 10) -> Settings:
+def make_settings(
+    tmp_path,
+    max_download_mb: int = 10,
+    youtube_proxy: str | None = None,
+) -> Settings:
     return Settings(
         upload_dir=tmp_path / "uploads",
         result_dir=tmp_path / "results",
@@ -23,6 +27,7 @@ def make_settings(tmp_path, max_download_mb: int = 10) -> Settings:
         cleanup_interval_minutes=60,
         youtube_max_download_mb=max_download_mb,
         youtube_max_duration_seconds=7200,
+        youtube_proxy=youtube_proxy,
     )
 
 
@@ -102,6 +107,49 @@ def test_download_youtube_writes_video_result(tmp_path, monkeypatch) -> None:
     assert result.extension == ".mp4"
     assert result.size == 5
     assert (settings.result_dir / f"{result.result_id}.mp4").exists()
+
+
+def capture_download_options(tmp_path, monkeypatch, settings: Settings) -> dict:
+    import yt_dlp
+
+    captured: dict[str, dict] = {}
+
+    class FakeYoutubeDL:
+        def __init__(self, options) -> None:
+            captured["options"] = options
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback) -> None:
+            return None
+
+        def extract_info(self, url: str, download: bool):
+            output = Path(str(captured["options"]["outtmpl"]).replace("%(ext)s", "mp4"))
+            output.write_bytes(b"video")
+            return {"title": "Sample video", "duration": 65}
+
+    monkeypatch.setattr(yt_dlp, "YoutubeDL", FakeYoutubeDL)
+    monkeypatch.setattr(
+        "app.services.youtube_downloader.shutil.which",
+        lambda command: f"/usr/bin/{command}",
+    )
+    download_youtube("https://youtu.be/abcdefghijk", "video", settings)
+    return captured["options"]
+
+
+def test_download_youtube_routes_through_configured_proxy(tmp_path, monkeypatch) -> None:
+    settings = make_settings(tmp_path, youtube_proxy="socks5://100.64.0.1:1080")
+
+    options = capture_download_options(tmp_path, monkeypatch, settings)
+
+    assert options["proxy"] == "socks5://100.64.0.1:1080"
+
+
+def test_download_youtube_connects_directly_without_proxy(tmp_path, monkeypatch) -> None:
+    options = capture_download_options(tmp_path, monkeypatch, make_settings(tmp_path))
+
+    assert "proxy" not in options
 
 
 def test_download_youtube_configures_mp3_extraction(tmp_path, monkeypatch) -> None:

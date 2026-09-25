@@ -78,6 +78,41 @@ def test_extract_youtube_transcript_uses_korean_caption(tmp_path, monkeypatch) -
     assert list(settings.upload_dir.iterdir()) == []
 
 
+def test_extract_youtube_transcript_routes_through_configured_proxy(
+    tmp_path, monkeypatch
+) -> None:
+    import yt_dlp
+
+    settings = make_settings(tmp_path, youtube_proxy="socks5://100.64.0.1:1080")
+    captured: dict[str, dict] = {}
+
+    class FakeYoutubeDL:
+        def __init__(self, options) -> None:
+            captured["options"] = options
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback) -> None:
+            return None
+
+        def extract_info(self, url: str, download: bool):
+            subtitle = Path(
+                str(captured["options"]["outtmpl"]).replace(".%(ext)s", ".ko.vtt")
+            )
+            subtitle.write_text(
+                "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\n안녕하세요\n",
+                encoding="utf-8",
+            )
+            return {"title": "한국어 영상", "duration": 20}
+
+    monkeypatch.setattr(yt_dlp, "YoutubeDL", FakeYoutubeDL)
+
+    extract_youtube_transcript("https://youtu.be/abcdefghijk", "auto", settings)
+
+    assert captured["options"]["proxy"] == "socks5://100.64.0.1:1080"
+
+
 def test_extract_youtube_transcript_reports_missing_captions(tmp_path, monkeypatch) -> None:
     import yt_dlp
 

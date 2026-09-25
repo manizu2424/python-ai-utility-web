@@ -207,3 +207,88 @@ curl -fsS http://127.0.0.1:8010/health
 - `.env`, 업로드 원본, 생성 결과 파일은 Git에 커밋하지 않습니다.
 - OS와 Docker 패키지에 보안 업데이트를 적용하고, 배포 후 상태 확인을 수행합니다.
 - 접근 로그나 오류 보고를 공유할 때 영상 URL, 파일명 등 개인 정보를 제거합니다.
+
+## 11. 유튜브 가정용 회선 경유
+
+Contabo 같은 데이터센터 IP에서는 유튜브가 요청을 봇으로 보고 차단합니다. 그래서
+유튜브 요청만 집의 Mac mini(가정용 회선)를 거치도록 SOCKS5 프록시를 둡니다.
+프록시는 Tailscale 사설망에만 열어 인터넷과 집 LAN에는 노출하지 않습니다.
+나머지 기능은 영향을 받지 않습니다. 다운로드한 파일은 집 회선의 업로드 대역폭을
+사용하고, Mac mini가 꺼져 있거나 잠자기 상태이면 유튜브 기능이 실패합니다.
+
+### 11.1 Tailscale 연결
+
+Mac mini와 VPS를 같은 Tailscale 계정(tailnet)에 로그인합니다.
+
+```bash
+# VPS
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+
+# Mac mini: Tailscale 앱으로 로그인한 뒤 IP 확인
+tailscale ip -4
+```
+
+이하 Mac mini의 Tailscale IP를 `100.x.y.z`로 표기합니다.
+
+### 11.2 Mac mini에 SOCKS5 프록시 실행
+
+`microsocks`를 설치하고 Tailscale IP에만 바인딩합니다. 사용자 이름과 비밀번호를
+지정해 tailnet의 다른 기기가 프록시를 쓰지 못하게 합니다.
+
+```bash
+brew install microsocks
+microsocks -i 100.x.y.z -p 1080 -u <사용자> -P <비밀번호>
+```
+
+재부팅 후에도 자동으로 실행되도록 `~/Library/LaunchAgents/local.youtube-proxy.plist`를
+만듭니다. LaunchAgent는 로그인한 사용자 세션에서 실행되므로 Mac mini의 자동
+로그인을 켜 둡니다.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>local.youtube-proxy</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/microsocks</string>
+    <string>-i</string><string>100.x.y.z</string>
+    <string>-p</string><string>1080</string>
+    <string>-u</string><string>사용자</string>
+    <string>-P</string><string>비밀번호</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+</dict>
+</plist>
+```
+
+```bash
+chmod 600 ~/Library/LaunchAgents/local.youtube-proxy.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.youtube-proxy.plist
+launchctl print gui/$(id -u)/local.youtube-proxy | grep state
+```
+
+Tailscale보다 먼저 시작되어 바인딩에 실패하더라도 `KeepAlive`가 다시 실행합니다.
+시스템 설정의 에너지 항목에서 자동 잠자기를 끄거나 `sudo pmset -a sleep 0`을
+적용합니다.
+
+### 11.3 VPS 앱 설정
+
+서버 `.env`에 프록시 주소를 추가하고 컨테이너를 다시 만듭니다.
+
+```dotenv
+YOUTUBE_PROXY=socks5://<사용자>:<비밀번호>@100.x.y.z:1080
+```
+
+```bash
+cd /home/docker/pytool
+docker compose -f docker-compose.yml -f compose.production.yml up -d
+docker exec ai-toolbox python -c "import socket; socket.create_connection(('100.x.y.z', 1080), 5); print('proxy reachable')"
+```
+
+컨테이너에서 프록시에 연결되지 않으면 VPS에서 `tailscale status`로 Mac mini가
+보이는지 먼저 확인합니다. 연결되면 웹 화면에서 짧은 공개 영상으로 영상·MP3·자막을
+각각 확인합니다. `YOUTUBE_PROXY`를 비우면 다시 직접 연결합니다.

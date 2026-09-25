@@ -169,6 +169,8 @@ def _build_options(
         "retries": 3,
         "socket_timeout": 30,
     }
+    if settings.youtube_proxy:
+        options["proxy"] = settings.youtube_proxy
 
     if mode == "audio":
         options.update(
