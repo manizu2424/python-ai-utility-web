@@ -30,7 +30,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             await cleanup_task
 
 
-app = FastAPI(title="AI Utility Toolbox", lifespan=lifespan)
+app = FastAPI(title="Python AI Util", lifespan=lifespan)
 app.include_router(text.router)
 app.include_router(pdf.router)
 app.include_router(youtube.router)
