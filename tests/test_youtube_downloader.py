@@ -230,6 +230,46 @@ def test_download_youtube_removes_partial_file_on_failure(tmp_path, monkeypatch)
     assert list(settings.result_dir.iterdir()) == []
 
 
+@pytest.mark.parametrize("missing_command", ["ffmpeg", "ffprobe"])
+def test_download_youtube_requires_ffmpeg_tools(
+    tmp_path,
+    monkeypatch,
+    missing_command: str,
+) -> None:
+    import yt_dlp
+
+    def fail_if_created(options) -> None:
+        raise AssertionError("yt-dlp must not start without ffmpeg tools")
+
+    monkeypatch.setattr(yt_dlp, "YoutubeDL", fail_if_created)
+    monkeypatch.setattr(
+        "app.services.youtube_downloader.shutil.which",
+        lambda command: None if command == missing_command else f"/usr/bin/{command}",
+    )
+
+    with pytest.raises(YoutubeDownloadError, match="ffmpeg와 ffprobe"):
+        download_youtube("https://youtu.be/abcdefghijk", "video", make_settings(tmp_path))
+
+
+def test_youtube_download_api_reports_missing_ffmpeg(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setenv("RESULT_DIR", str(tmp_path / "results"))
+    get_settings.cache_clear()
+    monkeypatch.setattr("app.services.youtube_downloader.shutil.which", lambda command: None)
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/youtube/download",
+                data={"url": "https://youtu.be/abcdefghijk", "mode": "audio"},
+            )
+    finally:
+        get_settings.cache_clear()
+
+    assert response.status_code == 422
+    assert "ffmpeg와 ffprobe" in response.json()["detail"]
+
+
 def test_download_youtube_rejects_unknown_mode(tmp_path) -> None:
     with pytest.raises(YoutubeDownloadError, match="영상 또는 음원"):
         download_youtube(
