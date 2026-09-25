@@ -1,4 +1,4 @@
-# Python AI 유틸리티 웹
+# Python AI Util
 
 개인용 파일 변환, 텍스트 추출, OCR 및 미디어 다운로드 기능을 제공하기 위한 FastAPI 웹 앱입니다.
 

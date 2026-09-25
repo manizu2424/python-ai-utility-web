@@ -23,6 +23,10 @@ logs/
 # Review reports may describe operational security state; keep them local
 docs/reviews/
 
+# Screenshots may capture server dashboards and settings
+스크린샷 *.png
+Screenshot *.png
+
 # Editors and operating systems
 .DS_Store
 .idea/

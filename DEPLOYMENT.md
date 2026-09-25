@@ -1,13 +1,13 @@
 # VPS 배포 및 운영 가이드
 
 이 문서는 Ubuntu 기반 Contabo VPS에 앱을 배포하고 Nginx Proxy Manager(NPM)를
-통해 `tools.manizu.kr`로 서비스하는 절차입니다. 앱 포트는 기본적으로
+통해 `tools.manizu.blog`로 서비스하는 절차입니다. 앱 포트는 기본적으로
 `127.0.0.1:8010`에만 바인딩하고, 외부 요청은 NPM 공유 Docker 네트워크를 통해
 컨테이너의 `8000` 포트로 전달합니다.
 
 ## 1. 사전 준비
 
-- `tools.manizu.kr`의 DNS A 레코드를 VPS 공인 IPv4 주소로 설정합니다.
+- `tools.manizu.blog`의 DNS A 레코드를 VPS 공인 IPv4 주소로 설정합니다.
 - VPS 방화벽에서는 SSH, HTTP, HTTPS에 필요한 `22`, `80`, `443` 포트만 허용합니다.
 - Nginx Proxy Manager를 먼저 실행하고 관리 화면에 접속할 수 있어야 합니다.
 - 운영 계정은 SSH 키로 로그인하고, 비밀번호 로그인과 root 직접 로그인은 가능한 한 비활성화합니다.
@@ -54,6 +54,9 @@ cd /home/docker/pytool
 cp .env.example .env
 chmod 600 .env
 ```
+
+저장소를 비공개로 전환한 경우 GitHub는 HTTPS 비밀번호 인증을 지원하지 않으므로
+clone과 `git pull`에 개인 액세스 토큰(PAT)이나 읽기 전용 deploy key(SSH)를 사용합니다.
 
 `.env`의 운영값을 확인합니다. 아래 항목은 운영 권장값입니다.
 
@@ -112,7 +115,7 @@ Portainer에서 실행 상태를 볼 수 있지만, 이 프로젝트는 기본 C
 
 NPM 관리 화면에서 `Proxy Hosts` → `Add Proxy Host`를 선택하고 다음과 같이 설정합니다.
 
-- Domain Names: `tools.manizu.kr`
+- Domain Names: `tools.manizu.blog`
 - Scheme: `http`
 - Forward Hostname / IP: `ai-toolbox`
 - Forward Port: `8000`
@@ -127,6 +130,10 @@ proxy_connect_timeout 60s;
 proxy_read_timeout 7200s;
 proxy_send_timeout 7200s;
 ```
+
+`client_max_body_size`는 요청 전체 크기 제한입니다. 앱의 `MAX_UPLOAD_MB`는 파일당
+제한이므로 PDF 병합처럼 여러 파일을 한 번에 보내는 요청은 합계가 110MB를 넘으면
+NPM에서 413으로 거부됩니다. 큰 파일을 자주 병합한다면 이 값을 함께 늘립니다.
 
 SSL 탭에서 새 Let's Encrypt 인증서를 발급한 뒤 `Force SSL`을 활성화합니다.
 HTTPS 접속이 정상임을 먼저 확인한 후 HSTS를 활성화합니다.
@@ -149,7 +156,9 @@ Proxy Host의 Details 탭에서 연결합니다.
 ## 6. 배포 후 점검
 
 ```bash
-curl -fsS https://tools.manizu.kr/health
+# Access List 적용 상태: 인증 없이 401, 인증 시 {"status":"ok"}
+curl -s -o /dev/null -w '%{http_code}\n' https://tools.manizu.blog/health
+curl -fsS -u '<사용자>:<비밀번호>' https://tools.manizu.blog/health
 docker compose -f docker-compose.yml -f compose.production.yml ps
 docker compose -f docker-compose.yml -f compose.production.yml logs --tail=100 ai-toolbox
 ```
