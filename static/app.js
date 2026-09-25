@@ -133,10 +133,12 @@ mergeFileList.addEventListener("click", (event) => {
   mergeFiles.splice(Number(removeButton.dataset.index), 1);
   renderMergeFiles();
   syncMergeInputFiles();
+  setMergeSelectionMessage();
 });
 
 clearMergeFilesButton.addEventListener("click", () => {
   resetMergeFiles();
+  setMergeSelectionMessage();
   pdfMergeInput.focus();
 });
 
@@ -185,7 +187,13 @@ function addMergeFiles(fileList) {
 
   renderMergeFiles();
   syncMergeInputFiles();
-  setPdfMessage(`${mergeFiles.length}개 PDF 파일이 선택되었습니다.`, false);
+  setMergeSelectionMessage();
+}
+
+function setMergeSelectionMessage() {
+  const message =
+    mergeFiles.length === 0 ? "" : `${mergeFiles.length}개 PDF 파일이 선택되었습니다.`;
+  setPdfMessage(message, false);
 }
 
 function renderMergeFiles() {
