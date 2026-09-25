@@ -271,7 +271,7 @@ pytesseract.image_to_string(image, lang="kor+eng")
 
 2026-09-25 문서·구현 교차 검토에서 나온 문제 #1~#13의 처리 내역이다. 상세 근거는 로컬 전용 보고서 `docs/reviews/2026-09-25-doc-audit.md`에 있다(커밋 제외).
 
-- [x] #1 운영 환경 API 문서 화면 비활성화: `APP_ENV=production`이면 `/docs`, `/redoc`, `/openapi.json`이 404 (2026-09-26 결정·구현, 테스트 6개)
+- [x] #1 운영 환경 API 문서 화면 비활성화: `APP_ENV=production`이면 `/docs`, `/redoc`, `/openapi.json`이 404 (2026-09-26 결정·구현, 테스트 6개, 운영 배포 후 404 확인)
 
 처리 완료(2026-09-25):
 
