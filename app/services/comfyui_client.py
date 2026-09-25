@@ -102,6 +102,10 @@ def generate_image(
                 clock,
             )
             content = _download(client, image_ref)
+    except httpx.UnsupportedProtocol as exc:
+        raise ComfyUIUnavailableError(
+            "COMFYUI_URL은 http://로 시작해야 합니다(예: http://<windows-tailscale-ip>:8188)."
+        ) from exc
     except httpx.TransportError as exc:
         raise ComfyUIUnavailableError(UNREACHABLE_MESSAGE) from exc
 

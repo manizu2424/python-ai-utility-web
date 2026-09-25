@@ -13,7 +13,8 @@ SYSTEM_PROMPT = (
     "new content. If the input is already English, return it with only minimal fixes. "
     "Output only the prompt text, with no quotes, labels, or explanations."
 )
-QUOTE_CHARS = "\"'`“”‘’"
+# Opening/closing pairs the model may wrap its whole answer in.
+WRAPPING_QUOTES = {('"', '"'), ("'", "'"), ("`", "`"), ("“", "”"), ("‘", "’")}
 
 
 class PromptTranslationError(Exception):
@@ -64,7 +65,14 @@ def translate_prompt(
     except (ValueError, KeyError, IndexError, TypeError) as exc:
         raise PromptTranslationError("OpenAI 응답 형식을 해석할 수 없습니다.") from exc
 
-    translated = (content or "").strip().strip(QUOTE_CHARS).strip()
+    translated = _unwrap_quotes((content or "").strip())
     if not translated:
         raise PromptTranslationError("OpenAI가 빈 번역 결과를 반환했습니다.")
     return translated
+
+
+def _unwrap_quotes(text: str) -> str:
+    # Only drop one pair around the whole answer; quotes inside (e.g. sign text) must stay.
+    if len(text) >= 2 and (text[0], text[-1]) in WRAPPING_QUOTES:
+        return text[1:-1].strip()
+    return text

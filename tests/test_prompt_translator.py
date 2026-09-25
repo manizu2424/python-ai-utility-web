@@ -113,3 +113,21 @@ def test_translate_prompt_rejects_malformed_response(tmp_path) -> None:
             make_settings(tmp_path),
             transport=openai_transport(httpx.Response(200, json={"choices": []})),
         )
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        ('A cafe with a neon sign that reads "OPEN"', 'A cafe with a neon sign that reads "OPEN"'),
+        ('"Tokyo" written in neon above a street', '"Tokyo" written in neon above a street'),
+        ("“A cat on a sofa.”", "A cat on a sofa."),
+    ],
+)
+def test_translate_prompt_strips_only_wrapping_quote_pair(tmp_path, content, expected) -> None:
+    translated = translate_prompt(
+        "간판",
+        make_settings(tmp_path),
+        transport=openai_transport(chat_response(content)),
+    )
+
+    assert translated == expected

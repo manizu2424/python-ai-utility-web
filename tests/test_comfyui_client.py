@@ -282,3 +282,8 @@ def test_generate_image_rejects_non_png_view(tmp_path) -> None:
             sleep=lambda seconds: None,
             clock=lambda: 0.0,
         )
+
+
+def test_generate_image_reports_url_without_scheme(tmp_path) -> None:
+    with pytest.raises(ComfyUIUnavailableError, match="http://"):
+        generate_image("a cat", "square", make_settings(tmp_path, comfyui_url="100.64.0.2:8188"))
