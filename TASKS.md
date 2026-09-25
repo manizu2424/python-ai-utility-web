@@ -2,12 +2,13 @@
 
 ## 남은 작업 (2026-09-25 기준)
 
-Phase 0~2는 모두 완료했다. 남은 작업은 다음 네 가지이며 위에서부터 진행한다.
+Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 위에서부터 진행한다.
 
-1. 운영 환경 API 문서 화면(`/docs`, `/redoc`) 비활성화 여부 결정 (아래 "문서 검토 후속 조치")
-2. 운영 로그 개인정보 점검 (운영 및 유지보수 작업)
-3. OCR 전처리 개선과 품질 회귀 테스트 (테스트 작업, "OCR 현황과 개선 메모")
-4. VPS 접속 정보와 운영 계정 정리 (Phase 0)
+1. Phase 3 이미지 생성(Windows ComfyUI 연동) 구현
+2. 운영 환경 API 문서 화면(`/docs`, `/redoc`) 비활성화 여부 결정 (아래 "문서 검토 후속 조치")
+3. 운영 로그 개인정보 점검 (운영 및 유지보수 작업)
+4. OCR 전처리 개선과 품질 회귀 테스트 (테스트 작업, "OCR 현황과 개선 메모")
+5. VPS 접속 정보와 운영 계정 정리 (Phase 0)
 
 ## Phase 0. 인프라 및 프로젝트 골격
 
@@ -73,11 +74,77 @@ Phase 0~2는 모두 완료했다. 남은 작업은 다음 네 가지이며 위�
 
 현재 상태: 완료. 단일 영상·MP3 다운로드와 한국어·영어 자막 추출 및 결과 다운로드를 지원한다. VPS에서는 유튜브가 데이터센터 IP를 차단하므로 가정용 회선 프록시(`DEPLOYMENT.md` 11절)를 거쳐 동작한다(2026-09-25 구성·운영 확인). Mac mini가 꺼져 있거나 로그인 전이면 유튜브 기능이 실패한다.
 
+## Phase 3. 이미지 생성 (Windows ComfyUI 연동)
+
+메뉴에서 한국어 프롬프트를 입력하면 OpenAI로 영어 프롬프트를 만들고, 집 Windows PC의 ComfyUI에서 이미지를 생성해 내려받는다. 텔레그램·n8n은 거치지 않는다. 설계는 2026-09-25에 확정했다.
+
+### 설계 결정
+
+- 흐름: 2단계. [번역]으로 영어 프롬프트를 받아 확인·수정한 뒤 [생성]한다. 영어를 직접 입력하면 번역 없이 생성할 수 있다.
+- 번역: OpenAI API(`httpx` 직접 호출, 새 의존성 없음). Z-Image Turbo에 맞춰 태그 나열이 아닌 자연스러운 영어 문장으로 번역하고 설명 없이 결과만 출력하도록 지시한다. ChatGPT 구독과 별개인 API 키·크레딧이 필요하다.
+- 연결: VPS 컨테이너 → Tailscale → Windows ComfyUI `:8188`. 포트는 인터넷에 공개하지 않고 Windows 방화벽에서 VPS의 Tailscale IP만 허용한다. 실제 IP는 `.env`에만 둔다.
+- 대기 방식: 동기. `POST /api/image/generate` 한 요청이 `/prompt` 제출 → `/history/{prompt_id}` 2초 간격 폴링 → `/view` 다운로드까지 마치고 응답한다. 작업 ID·폴링 API와 WebSocket 진행률은 두지 않는다.
+- 워크플로: Z-Image Turbo GGUF(Qwen3-4B 텍스트 인코더, 8 steps, `cfg 1`) API 형식 JSON을 `app/comfyui_workflows/z_image_turbo.json`에 두고 다음 노드만 바꾼다. 노드 번호는 `comfyui_client.py` 상수로 모은다.
+  - 노드 2 `text`: 영어 프롬프트
+  - 노드 5 `seed`: 요청마다 서버에서 무작위 생성(ComfyUI 화면의 randomize는 API에 적용되지 않음)
+  - 노드 8 `width`·`height`: `portrait` 768×1024(기본), `landscape` 1024×768, `square` 1024×1024
+  - 부정 프롬프트(노드 7)는 `cfg 1`에서 효과가 없어 화면에 두지 않는다.
+  - 출력 노드 10은 `PreviewImage` 그대로 둔다. `/history`의 `filename`·`subfolder`·`type`으로 가져오며 Windows에 이미지가 쌓이지 않는다.
+- 저장: 받은 PNG는 `save_result_bytes(..., ".png", ...)`로 `results/`에 저장하고 기존 24시간 정리와 `/api/results/{id}` 다운로드를 그대로 쓴다. `MEDIA_TYPES`에 `.png`를 추가한다.
+- 동시 요청 제한과 시간 초과 시 ComfyUI 작업 취소는 두지 않는다(개인용, 대기열은 ComfyUI가 관리).
+
+### 구성 요소
+
+- `app/routers/image.py`
+  - `POST /api/image/translate`: 폼 `prompt`(한국어) → `{"prompt_en"}`
+  - `POST /api/image/generate`: 폼 `prompt`(영어), `size` → `{"message", "result_id", "download_url", "seed", "width", "height"}`
+- `app/services/prompt_translator.py`: `translate_prompt(text, settings) -> str`
+- `app/services/comfyui_client.py`: `build_workflow(prompt, width, height, seed) -> dict`, `generate_image(prompt, size, settings) -> bytes`
+- 설정(`Settings`, `.env.example`): `OPENAI_API_KEY`, `OPENAI_MODEL`(기본 `gpt-5-mini`, 구현 시 OpenAI 문서에서 현재 소형 모델 확인), `COMFYUI_URL`(예: `http://<windows-tailscale-ip>:8188`), `COMFYUI_TIMEOUT_SECONDS`(기본 300)
+- 화면: "이미지 생성" 메뉴. 한국어 입력 + [번역], 영어 프롬프트(수정 가능) + 크기 선택 + [생성], 결과 미리보기 `<img>` + [다운로드]. `?v=` 갱신.
+
+### 오류 처리
+
+서비스는 `PromptTranslationError`, `ComfyUIError`를 던지고 라우터가 상태 코드로 바꾼다.
+
+| 상황 | 응답 |
+|---|---|
+| 빈 프롬프트, 2000자 초과(번역·생성 공통), 잘못된 `size` | 422 |
+| `OPENAI_API_KEY`·`COMFYUI_URL` 미설정 | 503 |
+| ComfyUI 연결 실패(거부·시간 초과): PC 전원, `--listen` 실행, Tailscale 확인 안내 | 503 |
+| `/prompt`의 `node_errors`(모델 파일 없음, GGUF 노드 미설치 등) | 502 |
+| `/history` 실행 상태 `error` | 502 |
+| 대기 한도 초과(Windows 대기열에 작업이 남을 수 있음 안내) | 504 |
+| OpenAI 401(키 오류)·429(한도·잔액) 등 | 502 |
+
+### 작업 체크리스트
+
+- [ ] 워크플로 템플릿 JSON 추가
+- [ ] 설정 항목과 `.env.example` 추가
+- [ ] `comfyui_client.py` 구현과 테스트
+- [ ] `prompt_translator.py` 구현과 테스트
+- [ ] `app/routers/image.py` 추가와 앱 등록, `.png` 결과 형식 추가
+- [ ] "이미지 생성" 화면 추가
+- [ ] Windows 준비: ComfyUI `--listen` 실행 bat, VPS Tailscale IP만 허용하는 방화벽 규칙(로컬 검증 시 Mac mini IP도 허용)
+- [ ] 로컬 실제 검증: Mac에서 Tailscale 경유로 1장 생성
+- [ ] 운영 검증: 컨테이너 안에서 `COMFYUI_URL/system_stats` 응답 확인 후 `tools.manizu.blog`에서 생성·다운로드
+- [ ] 문서 반영: `README.md`(기능, 구조도, 환경 변수, AI 범위 문구), `DEPLOYMENT.md`(Windows ComfyUI 연결 절, IP는 자리 표시자), `AGENTS.md`(AI 범위 문구)
+
+테스트(외부 호출은 `httpx.MockTransport`로 대체):
+
+- `tests/test_comfyui_client.py`: 노드 값 치환과 원본 템플릿 불변, 정상 흐름(제출 → 미완료 → 완료 → PNG), 연결 실패, `node_errors`, 실행 `error`, 시간 초과(폴링 간격·시계 주입), 설정 누락
+- `tests/test_prompt_translator.py`: 정상 번역, 앞뒤 공백·따옴표 제거, 401·429, 키 누락
+- `tests/test_config.py`: 새 환경 변수 기본값
+
+완료 기준: `tools.manizu.blog`에서 한국어 프롬프트를 번역·확인한 뒤 생성한 이미지를 미리 보고 내려받을 수 있다. Windows PC나 ComfyUI가 꺼져 있으면 원인을 알 수 있는 오류가 표시된다.
+
+현재 상태: 설계 확정, 구현 전.
+
 ## 프로젝트 범위에서 제외
 
 - 자막 및 추출 텍스트의 AI 요약
 - 외부 자동화 Webhook 연동
-- 번역, 교정, PDF Q&A, 이미지 설명 등 LLM 기반 기능
+- 번역, 교정, PDF Q&A, 이미지 설명 등 LLM 기반 기능(예외: Phase 3 이미지 생성 프롬프트 번역에만 OpenAI 사용)
 - Excel(XLSX) → PDF 변환
 - 레이아웃·표·이미지를 보존하는 PDF ↔ Word/Excel 변환(현재는 텍스트 기반 변환)
 
