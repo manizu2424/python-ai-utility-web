@@ -38,6 +38,18 @@ const youtubeDownloadLink = document.querySelector("#youtube-download-link");
 const youtubeResetButton = document.querySelector("#youtube-reset-button");
 const youtubeButton = youtubeForm.querySelector("button[type='submit']");
 const youtubeSubmitLabel = document.querySelector("#youtube-submit-label");
+const imageForm = document.querySelector("#image-form");
+const imagePromptKo = document.querySelector("#image-prompt-ko");
+const imagePromptEn = document.querySelector("#image-prompt-en");
+const imageSize = document.querySelector("#image-size");
+const imageTranslateButton = document.querySelector("#image-translate-button");
+const imageButton = imageForm.querySelector("button[type='submit']");
+const imageMessage = document.querySelector("#image-message");
+const imageResult = document.querySelector("#image-result");
+const imagePreview = document.querySelector("#image-preview");
+const imageResultMeta = document.querySelector("#image-result-meta");
+const imageDownloadLink = document.querySelector("#image-download-link");
+const imageResetButton = document.querySelector("#image-reset-button");
 const menuItems = document.querySelectorAll(".menu-item");
 const toolPanels = document.querySelectorAll(".tool-panel");
 let mergeFiles = [];
@@ -403,6 +415,92 @@ youtubeResetButton.addEventListener("click", () => {
   youtubeUrl.focus();
 });
 
+imageTranslateButton.addEventListener("click", async () => {
+  const prompt = imagePromptKo.value.trim();
+  if (!prompt) {
+    setImageMessage("번역할 한국어 프롬프트를 입력하세요.", true);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("prompt", prompt);
+
+  setImageBusy(true);
+  setImageMessage("번역 중입니다.", false);
+
+  try {
+    const response = await fetch("/api/image/translate", {
+      method: "POST",
+      body: formData,
+    });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setImageMessage(payload.detail || "번역에 실패했습니다.", true);
+      return;
+    }
+
+    imagePromptEn.value = payload.prompt_en || "";
+    setImageMessage("번역이 끝났습니다. 영어 프롬프트를 확인한 뒤 생성하세요.", false);
+    imagePromptEn.focus();
+  } catch {
+    setImageMessage("서버 요청에 실패했습니다.", true);
+  } finally {
+    setImageBusy(false);
+  }
+});
+
+imageForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const prompt = imagePromptEn.value.trim();
+  if (!prompt) {
+    setImageMessage("영어 프롬프트를 입력하거나 먼저 번역하세요.", true);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("prompt", prompt);
+  formData.append("size", imageSize.value);
+
+  setImageBusy(true);
+  imageResult.hidden = true;
+  setImageMessage("이미지를 생성하고 있습니다. 보통 수십 초가 걸립니다.", false);
+
+  try {
+    const response = await fetch("/api/image/generate", {
+      method: "POST",
+      body: formData,
+    });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setImageMessage(payload.detail || "이미지 생성에 실패했습니다.", true);
+      return;
+    }
+
+    imagePreview.src = payload.download_url;
+    imageResultMeta.textContent = `${payload.width}×${payload.height} · seed ${payload.seed}`;
+    imageDownloadLink.href = payload.download_url;
+    imageResult.hidden = false;
+    setImageMessage(payload.message || "이미지 생성이 완료되었습니다.", false);
+  } catch {
+    setImageMessage("서버 요청에 실패했습니다.", true);
+  } finally {
+    setImageBusy(false);
+  }
+});
+
+imageResetButton.addEventListener("click", () => {
+  imageForm.reset();
+  imagePreview.removeAttribute("src");
+  imageResultMeta.textContent = "";
+  imageDownloadLink.href = "#";
+  imageResult.hidden = true;
+  setImageMessage("", false);
+  imagePromptKo.focus();
+});
+
 syncPdfMode();
 syncYoutubeMode();
 
@@ -419,6 +517,16 @@ function setPdfMessage(text, isError) {
 function setYoutubeMessage(text, isError) {
   youtubeMessage.textContent = text;
   youtubeMessage.classList.toggle("error", isError);
+}
+
+function setImageMessage(text, isError) {
+  imageMessage.textContent = text;
+  imageMessage.classList.toggle("error", isError);
+}
+
+function setImageBusy(isBusy) {
+  imageTranslateButton.disabled = isBusy;
+  imageButton.disabled = isBusy;
 }
 
 function formatFileSize(size) {

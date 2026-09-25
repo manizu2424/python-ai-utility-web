@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Python AI Util</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20260925" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260925-image" />
   </head>
   <body>
     <main class="app-layout">
@@ -36,6 +36,10 @@
           <button class="menu-item" type="button" data-target="youtube-panel">
             <span class="menu-index">03</span>
             유튜브 다운로드
+          </button>
+          <button class="menu-item" type="button" data-target="image-panel">
+            <span class="menu-index">04</span>
+            이미지 생성
           </button>
         </nav>
         <div class="sidebar-foot">PRIVATE WORKSPACE <span>●</span></div>
@@ -242,8 +246,72 @@
             <textarea id="youtube-result-text" readonly hidden></textarea>
           </div>
         </section>
+
+        <section
+          id="image-panel"
+          class="tool-panel"
+          aria-labelledby="image-title"
+          hidden
+        >
+          <div class="panel-heading">
+            <span class="eyebrow">IMAGE / COMFYUI</span>
+            <h1 id="image-title">이미지 생성</h1>
+            <p>한국어 프롬프트를 영어로 옮겨 집 PC의 ComfyUI에서 이미지를 만듭니다.</p>
+          </div>
+          <form id="image-form" class="form">
+            <label class="field">
+              <span>한국어 프롬프트</span>
+              <textarea
+                id="image-prompt-ko"
+                class="prompt-input"
+                rows="4"
+                maxlength="2000"
+                placeholder="예: 파스텔색 집이 늘어선 항구 앞, 흰 원피스를 입은 여성, 따뜻한 햇살"
+              ></textarea>
+            </label>
+            <button id="image-translate-button" class="secondary" type="button">
+              영어로 번역
+            </button>
+            <label class="field">
+              <span>영어 프롬프트 · 생성에 사용되며 직접 입력하거나 고칠 수 있습니다</span>
+              <textarea
+                id="image-prompt-en"
+                class="prompt-input"
+                rows="5"
+                maxlength="2000"
+              ></textarea>
+            </label>
+            <label class="field">
+              <span>이미지 크기</span>
+              <select id="image-size" name="size">
+                <option value="portrait">세로 · 768×1024</option>
+                <option value="landscape">가로 · 1024×768</option>
+                <option value="square">정사각 · 1024×1024</option>
+              </select>
+            </label>
+            <p class="usage-note">
+              집 Windows PC와 ComfyUI가 켜져 있어야 합니다. 생성에는 보통 수십 초가
+              걸립니다.
+            </p>
+            <button type="submit">
+              <span>이미지 생성</span
+              ><span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+          </form>
+          <p id="image-message" class="message" role="status"></p>
+          <div id="image-result" class="result" hidden>
+            <img id="image-preview" class="image-preview" alt="생성된 이미지" />
+            <span id="image-result-meta" class="result-meta"></span>
+            <div class="result-actions">
+              <a id="image-download-link" href="#">이미지 다운로드</a>
+              <button id="image-reset-button" class="secondary" type="button">
+                초기화
+              </button>
+            </div>
+          </div>
+        </section>
       </section>
     </main>
-    <script src="/static/app.js?v=20260925-merge-count"></script>
+    <script src="/static/app.js?v=20260925-image"></script>
   </body>
 </html>
