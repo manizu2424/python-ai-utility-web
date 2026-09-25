@@ -18,3 +18,9 @@ def test_index_returns_html() -> None:
 
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
+
+
+def test_index_requires_revalidation_so_new_assets_load() -> None:
+    response = client.get("/")
+
+    assert response.headers["cache-control"] == "no-cache"

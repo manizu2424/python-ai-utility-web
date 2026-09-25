@@ -31,7 +31,7 @@
 
 ## 코딩 스타일 및 이름 규칙
 
-가능하면 Python 3.12 이상을 사용합니다. PEP 8, 4칸 들여쓰기, 공개 함수의 타입 힌트를 따르세요. 모듈, 함수, 변수, 테스트 파일은 `snake_case`를 사용하고 클래스는 `PascalCase`를 사용합니다. FastAPI 라우터는 얇게 유지하고 변환, OCR, 유튜브 다운로드 같은 처리는 `app/services/pdf_converter.py`와 같은 서비스 모듈로 분리하세요.
+가능하면 Python 3.12 이상을 사용합니다. PEP 8, 4칸 들여쓰기, 공개 함수의 타입 힌트를 따르세요. 모듈, 함수, 변수, 테스트 파일은 `snake_case`를 사용하고 클래스는 `PascalCase`를 사용합니다. `static/app.js`나 `static/styles.css`를 바꾸면 `static/index.html`의 `?v=` 값을 함께 올려 브라우저 캐시를 갱신하세요. FastAPI 라우터는 얇게 유지하고 변환, OCR, 유튜브 다운로드 같은 처리는 `app/services/pdf_converter.py`와 같은 서비스 모듈로 분리하세요.
 
 ## 테스트 지침
 
