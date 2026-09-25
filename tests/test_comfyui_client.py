@@ -287,3 +287,21 @@ def test_generate_image_rejects_non_png_view(tmp_path) -> None:
 def test_generate_image_reports_url_without_scheme(tmp_path) -> None:
     with pytest.raises(ComfyUIUnavailableError, match="http://"):
         generate_image("a cat", "square", make_settings(tmp_path, comfyui_url="100.64.0.2:8188"))
+
+
+def test_generate_image_gives_up_connecting_quickly(tmp_path) -> None:
+    requests: list[httpx.Request] = []
+
+    generate_image(
+        "a cat",
+        "square",
+        make_settings(tmp_path),
+        transport=comfy_transport([DONE_HISTORY], requests=requests),
+        sleep=lambda seconds: None,
+        clock=lambda: 0.0,
+    )
+
+    # An offline PC over Tailscale hangs instead of refusing, so connect must fail fast.
+    timeout = requests[0].extensions["timeout"]
+    assert timeout["connect"] == 5.0
+    assert timeout["read"] == 30.0

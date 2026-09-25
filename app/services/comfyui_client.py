@@ -28,7 +28,8 @@ IMAGE_SIZES = {
 # ComfyUI API does not apply the UI's "randomize" seed control, so the server picks one.
 MAX_SEED = 2**53 - 1
 POLL_INTERVAL_SECONDS = 2.0
-REQUEST_TIMEOUT_SECONDS = 30.0
+# An offline PC over Tailscale hangs rather than refusing, so fail the connect step fast.
+REQUEST_TIMEOUT = httpx.Timeout(30.0, connect=5.0)
 MAX_ERROR_CHARS = 300
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 UNREACHABLE_MESSAGE = (
@@ -91,7 +92,7 @@ def generate_image(
         with httpx.Client(
             base_url=settings.comfyui_url,
             transport=transport,
-            timeout=REQUEST_TIMEOUT_SECONDS,
+            timeout=REQUEST_TIMEOUT,
         ) as client:
             prompt_id = _submit(client, workflow)
             image_ref = _wait_for_image(
