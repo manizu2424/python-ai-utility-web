@@ -82,7 +82,7 @@ Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 �
 
 - 흐름: 2단계. [번역]으로 영어 프롬프트를 받아 확인·수정한 뒤 [생성]한다. 영어를 직접 입력하면 번역 없이 생성할 수 있다.
 - 번역: OpenAI API(`httpx` 직접 호출, 새 의존성 없음). Z-Image Turbo에 맞춰 태그 나열이 아닌 자연스러운 영어 문장으로 번역하고 설명 없이 결과만 출력하도록 지시한다. ChatGPT 구독과 별개인 API 키·크레딧이 필요하다.
-- 연결: VPS 컨테이너 → Tailscale → Windows ComfyUI `:8188`. 포트는 인터넷에 공개하지 않고 Windows 방화벽에서 VPS의 Tailscale IP만 허용한다. 실제 IP는 `.env`에만 둔다.
+- 연결: VPS 컨테이너 → Tailscale → Windows ComfyUI `:8188`. 포트는 인터넷과 집 LAN에 공개하지 않는다. tailnet 기기 간 접근은 Windows `Tailscale-In` 규칙으로 열려 있어 Tailscale ACL로만 좁힐 수 있다(2026-09-25 확인). 실제 IP는 `.env`에만 둔다.
 - 대기 방식: 동기. `POST /api/image/generate` 한 요청이 `/prompt` 제출 → `/history/{prompt_id}` 2초 간격 폴링 → `/view` 다운로드까지 마치고 응답한다. 작업 ID·폴링 API와 WebSocket 진행률은 두지 않는다.
 - 워크플로: Z-Image Turbo GGUF(Qwen3-4B 텍스트 인코더, 8 steps, `cfg 1`) API 형식 JSON을 `app/comfyui_workflows/z_image_turbo.json`에 두고 다음 노드만 바꾼다. 노드 번호는 `comfyui_client.py` 상수로 모은다.
   - 노드 2 `text`: 영어 프롬프트
@@ -125,7 +125,7 @@ Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 �
 - [x] `prompt_translator.py` 구현과 테스트
 - [x] `app/routers/image.py` 추가와 앱 등록, `.png` 결과 형식 추가
 - [x] "이미지 생성" 화면 추가
-- [x] Windows 준비: ComfyUI `--listen` 실행 bat, VPS Tailscale IP만 허용하는 방화벽 규칙(로컬 검증 시 Mac mini IP도 허용)
+- [x] Windows 준비: ComfyUI `--listen` 실행 bat, ComfyUI Python의 `Query User` 허용 규칙 비활성화. tailnet 기기는 Windows의 `Tailscale-In` 규칙으로 접속 가능하며 본인 기기뿐이라 그대로 둔다(제한이 필요하면 Tailscale ACL, `DEPLOYMENT.md` 12.2절)
 - [x] 로컬 실제 검증: Mac에서 Tailscale 경유로 1장 생성
 - [ ] 운영 검증: 컨테이너 안에서 `COMFYUI_URL/system_stats` 응답 확인 후 `tools.manizu.blog`에서 생성·다운로드
 - [x] 문서 반영: `README.md`(기능, 구조도, 환경 변수, AI 범위 문구), `DEPLOYMENT.md`(Windows ComfyUI 연결 절, IP는 자리 표시자), `AGENTS.md`(AI 범위 문구)

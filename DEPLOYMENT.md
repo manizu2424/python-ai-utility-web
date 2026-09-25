@@ -352,13 +352,11 @@ brew uninstall microsocks
 ## 12. 이미지 생성용 Windows ComfyUI 연결
 
 이미지 생성은 GPU가 있는 집 Windows PC의 ComfyUI를 Tailscale 사설망으로만 호출합니다.
-`8188` 포트는 인터넷과 집 LAN에 열지 않고, Windows 방화벽에서 VPS의 Tailscale IP만
-허용합니다. PC가 꺼져 있거나 ComfyUI가 실행 중이 아니면 이미지 생성만 실패하고 나머지
-기능은 영향을 받지 않습니다.
+`8188` 포트는 인터넷과 집 LAN에 열지 않습니다. PC가 꺼져 있거나 ComfyUI가 실행 중이
+아니면 이미지 생성만 실패하고 나머지 기능은 영향을 받지 않습니다.
 
 이하 Windows PC의 Tailscale IP를 `<windows-tailscale-ip>`, VPS의 Tailscale IP를
-`<vps-tailscale-ip>`, Mac mini의 Tailscale IP를 `<mac-mini-tailscale-ip>`로 표기합니다.
-각 기기에서 `tailscale ip -4`로 확인합니다.
+`<vps-tailscale-ip>`로 표기합니다. 각 기기에서 `tailscale ip -4`로 확인합니다.
 
 ### 12.1 Windows에서 ComfyUI 실행
 
@@ -375,12 +373,32 @@ Z-Image Turbo GGUF 워크플로(`app/comfyui_workflows/z_image_turbo.json`)는 C
 노드 1·3·4 값도 함께 바꿉니다.
 
 처음 실행할 때 Windows가 Python의 네트워크 접근 허용 여부를 물으면 허용하지 않습니다.
-허용하면 모든 주소에서 들어오는 연결을 여는 규칙이 생깁니다. 대신 아래 규칙만 만듭니다.
+허용하면 ComfyUI의 Python에 모든 주소(집 LAN 포함)의 연결을 여는 `Query User` 규칙이
+생깁니다.
 
-### 12.2 Windows 방화벽 규칙
+### 12.2 Windows 방화벽과 Tailscale 접근 범위
 
-관리자 권한 PowerShell에서 VPS의 Tailscale IP만 허용합니다. Mac mini에서 로컬로
-시험하려면 `RemoteAddress`에 Mac mini IP도 쉼표로 추가합니다.
+Windows용 Tailscale은 설치할 때 `Tailscale-In` 규칙(개인·도메인 네트워크, 모든 포트
+허용)을 만들고 Tailscale 연결을 개인 네트워크로 잡습니다. 그래서 같은 tailnet의 기기는
+Windows 방화벽과 관계없이 `8188`을 포함한 모든 포트에 접속할 수 있습니다. tailnet에는
+본인 기기만 있으므로 이 상태로 운영하며(2026-09-25 결정), 기기 간 접근을 좁히려면
+Windows 방화벽이 아니라 Tailscale ACL로 제한합니다.
+
+집 LAN은 공용 네트워크로 잡혀 `Tailscale-In`이 적용되지 않으므로, ComfyUI Python의
+`Query User` 규칙만 없으면 `8188`이 닫힙니다. 관리자 권한 PowerShell에서 확인하고, 켜진
+규칙이 있으면 끕니다(`Enable-NetFirewallRule`로 되돌릴 수 있음).
+
+```powershell
+Get-NetFirewallApplicationFilter |
+  Where-Object Program -like '*comfyui*python*' |
+  Get-NetFirewallRule |
+  Where-Object { $_.Direction -eq 'Inbound' -and $_.Action -eq 'Allow' -and $_.Enabled -eq 'True' } |
+  Select-Object Name, DisplayName, Profile
+
+Disable-NetFirewallRule -Name "<위에서 나온 Name>"
+```
+
+`Tailscale-In`이 없는 환경이라면 VPS만 허용하는 규칙을 만듭니다.
 
 ```powershell
 New-NetFirewallRule `
@@ -389,7 +407,7 @@ New-NetFirewallRule `
   -Action Allow `
   -Protocol TCP `
   -LocalPort 8188 `
-  -RemoteAddress <vps-tailscale-ip>,<mac-mini-tailscale-ip>
+  -RemoteAddress <vps-tailscale-ip>
 ```
 
 ### 12.3 VPS 앱 설정과 연결 확인
@@ -405,12 +423,12 @@ curl --max-time 10 http://<windows-tailscale-ip>:8188/system_stats
 | 결과 | 원인 |
 |---|---|
 | JSON 응답 | 연결 성공 |
-| Connection timed out | Windows 방화벽 규칙 또는 Tailscale 연결 문제 |
+| Connection timed out | Windows PC 꺼짐, Tailscale 연결 또는 Windows 방화벽 문제 |
 | Connection refused | ComfyUI가 꺼져 있거나 `--listen` 없이 실행됨 |
 | `tailscale ping` 실패 | 두 기기의 Tailscale 로그인·계정 확인 |
 
-서버 `.env`에 다음을 추가하고 컨테이너를 다시 만든 뒤, 컨테이너 안에서도 연결되는지
-확인합니다.
+서버 `.env`에 다음을 추가하고 컨테이너를 다시 만든 뒤(코드가 바뀌었으면 7절처럼
+`--build` 포함), 컨테이너 안에서도 연결되는지 확인합니다.
 
 ```dotenv
 OPENAI_API_KEY=<OpenAI API 키>
@@ -421,7 +439,7 @@ COMFYUI_TIMEOUT_SECONDS=300
 
 ```bash
 cd /home/docker/pytool
-docker compose -f docker-compose.yml -f compose.production.yml up -d
+docker compose -f docker-compose.yml -f compose.production.yml up -d --build
 docker exec ai-toolbox python -c "import os, urllib.request; print(urllib.request.urlopen(os.environ['COMFYUI_URL'] + '/system_stats', timeout=10).status)"
 ```
 
