@@ -1,4 +1,5 @@
 import asyncio
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
@@ -15,6 +16,8 @@ from app.services.cleanup import cleanup_runtime_files, run_cleanup_loop
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
+# Auto-generated API docs map every endpoint and let callers run them; keep them out of production.
+API_DOCS_ENABLED = os.getenv("APP_ENV", "development") != "production"
 
 
 @asynccontextmanager
@@ -30,7 +33,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             await cleanup_task
 
 
-app = FastAPI(title="Python AI Util", lifespan=lifespan)
+app = FastAPI(
+    title="Python AI Util",
+    lifespan=lifespan,
+    docs_url="/docs" if API_DOCS_ENABLED else None,
+    redoc_url="/redoc" if API_DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if API_DOCS_ENABLED else None,
+)
 app.include_router(text.router)
 app.include_router(pdf.router)
 app.include_router(youtube.router)

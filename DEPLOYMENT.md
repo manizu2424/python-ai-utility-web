@@ -154,6 +154,8 @@ Proxy Host의 Details 탭에서 연결합니다.
 # Access List 적용 상태: 인증 없이 401, 인증 시 {"status":"ok"}
 curl -s -o /dev/null -w '%{http_code}\n' https://tools.manizu.blog/health
 curl -fsS -u '<사용자>:<비밀번호>' https://tools.manizu.blog/health
+# 운영에서는 API 문서 화면이 꺼져 404
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8010/docs
 docker compose -f docker-compose.yml -f compose.production.yml ps
 docker compose -f docker-compose.yml -f compose.production.yml logs --tail=100 ai-toolbox
 ```
