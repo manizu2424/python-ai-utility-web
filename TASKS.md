@@ -7,7 +7,7 @@
 - [ ] Nginx Proxy Manager 컨테이너 구성
 - [ ] `tools.manizu.kr` 서브도메인 DNS 연결
 - [ ] Let's Encrypt HTTPS 인증서 적용
-- [ ] 개인 접근 제한 방식 결정: Basic Auth 또는 IP 화이트리스트
+- [x] 개인 접근 제한 적용: NPM Access List Basic Auth (2026-09-25)
 - [x] FastAPI 기본 프로젝트 생성
   - [x] `app/main.py` 생성
   - [x] `/health` 상태 확인 API 추가
@@ -206,10 +206,10 @@ pytesseract.image_to_string(image, lang="kor+eng")
 
 ### 운영 (우선)
 
-- [ ] #1 운영 도메인에 개인 접근 제한(NPM Access List: Basic Auth 또는 IP 제한) 적용 후 비인증 요청이 401인지 확인
+- [x] #1 운영 도메인에 개인 접근 제한(NPM Access List Basic Auth) 적용, 비인증 요청 401 확인 (2026-09-25)
 - [ ] #1 운영 환경에서 API 문서 화면(`/docs`, `/redoc`) 비활성화 여부 결정
-- [ ] #5 NPM Proxy Host를 `DEPLOYMENT.md` §5 설정(`ai-toolbox:8000`, Block Common Exploits)과 맞추기
-- [ ] NPM 관리 포트 외부 노출 여부 확인
+- [x] #5 NPM Proxy Host를 `DEPLOYMENT.md` §5 설정(`ai-toolbox:8000`, Block Common Exploits)과 맞추기 (2026-09-25)
+- [x] NPM 관리 포트를 서버 내부(`127.0.0.1`)로 제한하고 관리 화면은 HTTPS 도메인으로만 접속 (2026-09-25)
 
 ### 기능
 

@@ -131,8 +131,17 @@ proxy_send_timeout 7200s;
 SSL 탭에서 새 Let's Encrypt 인증서를 발급한 뒤 `Force SSL`을 활성화합니다.
 HTTPS 접속이 정상임을 먼저 확인한 후 HSTS를 활성화합니다.
 
-개인용 서비스이므로 NPM의 `Access Lists`에서 Basic Auth 계정을 만들거나 접근
-가능한 IP 대역을 제한하고, 해당 Access List를 Proxy Host에 연결합니다.
+개인용 서비스이므로 NPM의 `Access Lists`에서 Basic Auth 접근 제한을 만들고
+Proxy Host의 Details 탭에서 연결합니다.
+
+- Details: `Satisfy Any` 끔, `Pass Auth to Host` 끔
+- Authorization: 사용자 이름과 다른 곳에서 쓰지 않는 긴 비밀번호
+- Access: `allow` / `all` 규칙 하나. NPM이 규칙 뒤에 `deny all`을 자동으로 붙이므로
+  허용 규칙이 필요합니다. `allow all` 상태에서 `Satisfy Any`를 켜면 비밀번호 없이
+  접속되므로 반드시 끕니다.
+
+연결 후 인증 없이 `curl -s -o /dev/null -w '%{http_code}' https://<도메인>/`을 실행해
+`401`이 나오는지 확인합니다.
 
 운영 공개 전에는 Access List 연결, SSL `Force SSL`, 업로드 제한 설정을 모두
 확인해야 합니다.
