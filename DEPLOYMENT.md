@@ -164,7 +164,7 @@ docker compose -f docker-compose.yml -f compose.production.yml logs --tail=100 a
 2. PDF 변환 또는 병합
 3. 권한이 있는 공개 유튜브 영상의 자막 텍스트 추출
 
-상세 기능 점검은 `TESTING_GUIDE.md`를 따릅니다.
+전체 기능 목록은 `README.md`의 "기능"을 참고합니다.
 
 ## 7. 업데이트 배포
 
