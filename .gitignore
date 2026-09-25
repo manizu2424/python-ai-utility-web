@@ -20,6 +20,9 @@ uploads/
 results/
 logs/
 
+# Review reports may describe operational security state; keep them local
+docs/reviews/
+
 # Editors and operating systems
 .DS_Store
 .idea/
