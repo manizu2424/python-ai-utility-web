@@ -1,10 +1,10 @@
 # Python AI Util
 
-자주 쓰는 텍스트 추출, PDF 변환, 유튜브 다운로드를 웹 화면에서 처리하는 개인용
+자주 쓰는 텍스트 추출, PDF 변환, 유튜브 다운로드, 이미지 생성을 웹 화면에서 처리하는 개인용
 FastAPI 앱입니다. 본인 전용(로그인·과금 없음)이며 Contabo VPS의 Docker에서
 `tools.manizu.blog`로 운영하고, Nginx Proxy Manager의 Basic Auth로 본인 외 접근을
-막습니다. 이름에 AI가 들어가지만 AI 기능은 범위에서 제외했습니다(`TASKS.md`
-"프로젝트 범위에서 제외").
+막습니다. AI 기능은 이미지 생성 프롬프트 번역(OpenAI)에만 쓰고 나머지는 범위에서
+제외했습니다(`TASKS.md` "프로젝트 범위에서 제외").
 
 ## 기능
 
@@ -29,6 +29,11 @@ FastAPI 앱입니다. 본인 전용(로그인·과금 없음)이며 Contabo VPS�
 본인이 저장할 권한이 있는 콘텐츠에만 사용하세요. 실제 다운로드 가능 여부는 영상 공개
 범위, 지역·연령 제한 및 네트워크 상태에 따라 달라집니다.
 
+**이미지 생성**
+
+- 한국어 프롬프트를 OpenAI로 영어 문장 프롬프트로 번역(확인·수정 후 생성, 영어 직접 입력 가능)
+- 집 Windows PC의 ComfyUI(Z-Image Turbo)로 세로·가로·정사각 PNG 1장 생성, 미리보기와 다운로드
+
 ## 구조
 
 ```text
@@ -37,11 +42,14 @@ FastAPI 앱입니다. 본인 전용(로그인·과금 없음)이며 Contabo VPS�
                                             ▼
                                    [FastAPI 컨테이너] ── 변환·추출 처리, 결과 파일 반환
                                             │
-                                            └─ 유튜브 요청만 ── Tailscale ──▶ [집 Mac mini SOCKS5 프록시] ──▶ YouTube
+                                            ├─ 유튜브 요청만 ── Tailscale ──▶ [집 Mac mini SOCKS5 프록시] ──▶ YouTube
+                                            └─ 이미지 생성만 ── Tailscale ──▶ [집 Windows PC ComfyUI :8188]
 ```
 
 유튜브는 데이터센터 IP를 차단하므로 유튜브 요청만 가정용 회선을 거칩니다
 ([`DEPLOYMENT.md`](DEPLOYMENT.md) 11절).
+이미지 생성은 GPU가 있는 집 Windows PC의 ComfyUI를 Tailscale로만 호출합니다
+([`DEPLOYMENT.md`](DEPLOYMENT.md) 12절). PC가 꺼져 있으면 이미지 생성만 실패합니다.
 
 | 영역 | 기술 |
 |---|---|
@@ -49,11 +57,13 @@ FastAPI 앱입니다. 본인 전용(로그인·과금 없음)이며 Contabo VPS�
 | 프론트엔드 | 단순 HTML/CSS/JavaScript |
 | 파일 처리 | PyMuPDF, python-docx, openpyxl, reportlab, Pillow, Tesseract OCR |
 | 유튜브 | yt-dlp, Deno(JS 런타임), ffmpeg |
+| 이미지 생성 | OpenAI API(번역), ComfyUI(Z-Image Turbo GGUF), httpx |
 | 인프라 | Docker Compose, Nginx Proxy Manager, Let's Encrypt, Tailscale |
 
 ```text
 app/              FastAPI 앱과 설정
-app/routers/      텍스트, PDF, YouTube, 결과 다운로드 API 라우터
+app/routers/      텍스트, PDF, YouTube, 이미지 생성, 결과 다운로드 API 라우터
+app/comfyui_workflows/  ComfyUI API 형식 워크플로 템플릿
 app/services/     파일 저장, 변환, 추출 및 정리 기능
 static/           프론트엔드 정적 자산
 tests/            pytest 테스트
@@ -105,7 +115,7 @@ source .venv/bin/activate
 pytest
 ```
 
-2026-09-25 기준 자동 테스트는 52개입니다. 화면에서 확인할 때는 위 "기능"의 항목을
+2026-09-25 기준 자동 테스트는 90개입니다. 화면에서 확인할 때는 위 "기능"의 항목을
 하나씩 실행하고 결과 파일을 내려받아 봅니다.
 
 ## 환경 변수
@@ -121,6 +131,11 @@ pytest
 VPS처럼 데이터센터 IP에서 유튜브 접근이 차단되는 환경에서는 `YOUTUBE_PROXY`에
 가정용 회선의 SOCKS5 프록시 주소를 지정합니다. 설정 방법은
 [`DEPLOYMENT.md`](DEPLOYMENT.md) 11절을 참고하세요.
+
+이미지 생성에는 `OPENAI_API_KEY`(ChatGPT 구독과 별개인 OpenAI API 키), `OPENAI_MODEL`(기본
+`gpt-6-luna`), Windows ComfyUI 주소 `COMFYUI_URL`(예: `http://<windows-tailscale-ip>:8188`)과
+생성 대기 한도 `COMFYUI_TIMEOUT_SECONDS`(기본 300초)가 필요합니다. 비워 두면 해당 버튼이
+원인을 안내하는 오류를 냅니다. 설정 방법은 [`DEPLOYMENT.md`](DEPLOYMENT.md) 12절을 참고하세요.
 
 ## 문서
 

@@ -348,3 +348,91 @@ brew uninstall microsocks
 
 완전히 제거한 뒤에는 VPS `.env`의 `YOUTUBE_PROXY` 값을 비우고 컨테이너를 다시
 만들어 직접 연결로 되돌립니다. 이 경우 VPS에서는 유튜브 기능이 동작하지 않습니다.
+
+## 12. 이미지 생성용 Windows ComfyUI 연결
+
+이미지 생성은 GPU가 있는 집 Windows PC의 ComfyUI를 Tailscale 사설망으로만 호출합니다.
+`8188` 포트는 인터넷과 집 LAN에 열지 않고, Windows 방화벽에서 VPS의 Tailscale IP만
+허용합니다. PC가 꺼져 있거나 ComfyUI가 실행 중이 아니면 이미지 생성만 실패하고 나머지
+기능은 영향을 받지 않습니다.
+
+이하 Windows PC의 Tailscale IP를 `<windows-tailscale-ip>`, VPS의 Tailscale IP를
+`<vps-tailscale-ip>`, Mac mini의 Tailscale IP를 `<mac-mini-tailscale-ip>`로 표기합니다.
+각 기기에서 `tailscale ip -4`로 확인합니다.
+
+### 12.1 Windows에서 ComfyUI 실행
+
+ComfyUI Portable 폴더에 `run_nvidia_gpu_tailscale.bat`를 만들고 외부 연결을 받도록 실행합니다.
+
+```bat
+.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --listen 0.0.0.0 --port 8188
+pause
+```
+
+Z-Image Turbo GGUF 워크플로(`app/comfyui_workflows/z_image_turbo.json`)는 ComfyUI-GGUF
+커스텀 노드와 다음 모델 파일이 있어야 합니다: `z-image-turbo-Q4_K_M.gguf`,
+`Qwen3-4B-Q4_K_M.gguf`, `zimage-turbo-vae.safetensors`. 모델 파일 이름을 바꾸면 템플릿의
+노드 1·3·4 값도 함께 바꿉니다.
+
+처음 실행할 때 Windows가 Python의 네트워크 접근 허용 여부를 물으면 허용하지 않습니다.
+허용하면 모든 주소에서 들어오는 연결을 여는 규칙이 생깁니다. 대신 아래 규칙만 만듭니다.
+
+### 12.2 Windows 방화벽 규칙
+
+관리자 권한 PowerShell에서 VPS의 Tailscale IP만 허용합니다. Mac mini에서 로컬로
+시험하려면 `RemoteAddress`에 Mac mini IP도 쉼표로 추가합니다.
+
+```powershell
+New-NetFirewallRule `
+  -DisplayName "ComfyUI from Tailscale" `
+  -Direction Inbound `
+  -Action Allow `
+  -Protocol TCP `
+  -LocalPort 8188 `
+  -RemoteAddress <vps-tailscale-ip>,<mac-mini-tailscale-ip>
+```
+
+### 12.3 VPS 앱 설정과 연결 확인
+
+VPS에서 Windows PC가 보이는지 확인합니다.
+
+```bash
+tailscale status
+tailscale ping <windows-tailscale-ip>
+curl --max-time 10 http://<windows-tailscale-ip>:8188/system_stats
+```
+
+| 결과 | 원인 |
+|---|---|
+| JSON 응답 | 연결 성공 |
+| Connection timed out | Windows 방화벽 규칙 또는 Tailscale 연결 문제 |
+| Connection refused | ComfyUI가 꺼져 있거나 `--listen` 없이 실행됨 |
+| `tailscale ping` 실패 | 두 기기의 Tailscale 로그인·계정 확인 |
+
+서버 `.env`에 다음을 추가하고 컨테이너를 다시 만든 뒤, 컨테이너 안에서도 연결되는지
+확인합니다.
+
+```dotenv
+OPENAI_API_KEY=<OpenAI API 키>
+OPENAI_MODEL=gpt-6-luna
+COMFYUI_URL=http://<windows-tailscale-ip>:8188
+COMFYUI_TIMEOUT_SECONDS=300
+```
+
+```bash
+cd /home/docker/pytool
+docker compose -f docker-compose.yml -f compose.production.yml up -d
+docker exec ai-toolbox python -c "import os, urllib.request; print(urllib.request.urlopen(os.environ['COMFYUI_URL'] + '/system_stats', timeout=10).status)"
+```
+
+`200`이 나오면 웹 화면의 "이미지 생성"에서 번역과 생성을 확인합니다. OpenAI API는
+ChatGPT 구독과 별도로 platform.openai.com에서 키 발급과 크레딧 충전이 필요합니다.
+
+### 12.4 운영 영향
+
+- 생성 요청은 서버에서 최대 `COMFYUI_TIMEOUT_SECONDS` 동안 기다립니다. 시간 초과가 나도
+  Windows 대기열의 작업은 취소되지 않으므로 필요하면 ComfyUI 화면에서 정리합니다.
+- 생성 중에는 Windows PC의 GPU를 사용하므로 PC에서 다른 GPU 작업이 느려질 수 있습니다.
+- 생성 이미지는 ComfyUI 임시 폴더에 저장된 뒤 VPS `results/`로 옮겨지며, 다른 결과
+  파일처럼 24시간 뒤 삭제됩니다. ComfyUI 임시 폴더는 ComfyUI를 재시작하면 비워집니다.
+- 번역할 때마다 입력 프롬프트가 OpenAI API로 전송되고 사용량만큼 과금됩니다.

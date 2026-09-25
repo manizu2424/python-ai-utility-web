@@ -2,12 +2,13 @@
 
 ## 프로젝트 구조 및 모듈 구성
 
-이 저장소는 개인용 유틸리티 웹 앱 Python AI Util(텍스트 추출, PDF 변환, 유튜브 다운로드)이며 `tools.manizu.blog`에서 운영 중입니다. 개요·기능·실행·테스트는 `README.md`, 작업 체크리스트는 `TASKS.md`, 배포·운영 절차는 `DEPLOYMENT.md`에 있습니다. 문서를 새로 늘리기보다 이 세 문서에 이어서 적습니다. 이름에 AI가 들어가지만 AI 기능은 프로젝트 범위에서 제외되었습니다.
+이 저장소는 개인용 유틸리티 웹 앱 Python AI Util(텍스트 추출, PDF 변환, 유튜브 다운로드, 이미지 생성)이며 `tools.manizu.blog`에서 운영 중입니다. 개요·기능·실행·테스트는 `README.md`, 작업 체크리스트는 `TASKS.md`, 배포·운영 절차는 `DEPLOYMENT.md`에 있습니다. 문서를 새로 늘리기보다 이 세 문서에 이어서 적습니다. AI 기능은 이미지 생성 프롬프트 번역(OpenAI)에만 쓰고 나머지는 프로젝트 범위에서 제외되었습니다.
 
 현재 구조는 아래 기준을 따릅니다.
 
 - `app/`: FastAPI 앱 진입점과 설정 파일
-- `app/routers/`: 텍스트, PDF, YouTube, 결과 다운로드 API 라우터
+- `app/routers/`: 텍스트, PDF, YouTube, 이미지 생성, 결과 다운로드 API 라우터
+- `app/comfyui_workflows/`: ComfyUI API 형식 워크플로 템플릿(노드 번호는 `app/services/comfyui_client.py` 상수와 맞춤)
 - `app/services/`: 업로드 저장, 텍스트 추출, PDF 변환, 유튜브 다운로드, 파일 정리 같은 처리 로직
 - `tests/`: `app/` 구조를 따라가는 pytest 테스트
 - `static/`: 단순 HTML, CSS, JavaScript 자산
@@ -35,7 +36,7 @@
 
 ## 테스트 지침
 
-테스트 프레임워크는 `pytest`를 사용합니다. 테스트 파일은 `test_<module>.py`, 테스트 함수는 `test_<behavior>()` 형식으로 작성하세요. 파일 변환, OCR, 유튜브 다운로드, 지원하지 않는 파일 형식, `ffmpeg`·Tesseract 같은 외부 바이너리 누락 상황을 우선 검증합니다. 외부 서비스(yt-dlp 등)는 테스트에서 가짜 객체로 대체합니다.
+테스트 프레임워크는 `pytest`를 사용합니다. 테스트 파일은 `test_<module>.py`, 테스트 함수는 `test_<behavior>()` 형식으로 작성하세요. 파일 변환, OCR, 유튜브 다운로드, 지원하지 않는 파일 형식, `ffmpeg`·Tesseract 같은 외부 바이너리 누락 상황을 우선 검증합니다. 외부 서비스(yt-dlp, OpenAI, ComfyUI 등)는 테스트에서 가짜 객체로 대체합니다.
 
 ## 커밋 및 풀 리퀘스트 지침
 

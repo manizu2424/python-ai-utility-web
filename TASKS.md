@@ -4,7 +4,7 @@
 
 Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 위에서부터 진행한다.
 
-1. Phase 3 이미지 생성(Windows ComfyUI 연동) 구현
+1. Phase 3 이미지 생성: Windows 준비와 실제 연결·운영 검증 (구현 완료)
 2. 운영 환경 API 문서 화면(`/docs`, `/redoc`) 비활성화 여부 결정 (아래 "문서 검토 후속 조치")
 3. 운영 로그 개인정보 점검 (운영 및 유지보수 작업)
 4. OCR 전처리 개선과 품질 회귀 테스트 (테스트 작업, "OCR 현황과 개선 메모")
@@ -99,8 +99,8 @@ Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 �
   - `POST /api/image/translate`: 폼 `prompt`(한국어) → `{"prompt_en"}`
   - `POST /api/image/generate`: 폼 `prompt`(영어), `size` → `{"message", "result_id", "download_url", "seed", "width", "height"}`
 - `app/services/prompt_translator.py`: `translate_prompt(text, settings) -> str`
-- `app/services/comfyui_client.py`: `build_workflow(prompt, width, height, seed) -> dict`, `generate_image(prompt, size, settings) -> bytes`
-- 설정(`Settings`, `.env.example`): `OPENAI_API_KEY`, `OPENAI_MODEL`(기본 `gpt-5-mini`, 구현 시 OpenAI 문서에서 현재 소형 모델 확인), `COMFYUI_URL`(예: `http://<windows-tailscale-ip>:8188`), `COMFYUI_TIMEOUT_SECONDS`(기본 300)
+- `app/services/comfyui_client.py`: `build_workflow(prompt, width, height, seed) -> dict`, `generate_image(prompt, size, settings) -> GeneratedImage`(PNG 바이트, seed, 크기)
+- 설정(`Settings`, `.env.example`): `OPENAI_API_KEY`, `OPENAI_MODEL`(기본 `gpt-6-luna`. 처음 정한 `gpt-5-mini`는 2026-12-11 지원 종료 예정이라 교체), `COMFYUI_URL`(예: `http://<windows-tailscale-ip>:8188`), `COMFYUI_TIMEOUT_SECONDS`(기본 300)
 - 화면: "이미지 생성" 메뉴. 한국어 입력 + [번역], 영어 프롬프트(수정 가능) + 크기 선택 + [생성], 결과 미리보기 `<img>` + [다운로드]. `?v=` 갱신.
 
 ### 오류 처리
@@ -119,16 +119,16 @@ Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 �
 
 ### 작업 체크리스트
 
-- [ ] 워크플로 템플릿 JSON 추가
-- [ ] 설정 항목과 `.env.example` 추가
-- [ ] `comfyui_client.py` 구현과 테스트
-- [ ] `prompt_translator.py` 구현과 테스트
-- [ ] `app/routers/image.py` 추가와 앱 등록, `.png` 결과 형식 추가
-- [ ] "이미지 생성" 화면 추가
+- [x] 워크플로 템플릿 JSON 추가
+- [x] 설정 항목과 `.env.example` 추가
+- [x] `comfyui_client.py` 구현과 테스트
+- [x] `prompt_translator.py` 구현과 테스트
+- [x] `app/routers/image.py` 추가와 앱 등록, `.png` 결과 형식 추가
+- [x] "이미지 생성" 화면 추가
 - [ ] Windows 준비: ComfyUI `--listen` 실행 bat, VPS Tailscale IP만 허용하는 방화벽 규칙(로컬 검증 시 Mac mini IP도 허용)
 - [ ] 로컬 실제 검증: Mac에서 Tailscale 경유로 1장 생성
 - [ ] 운영 검증: 컨테이너 안에서 `COMFYUI_URL/system_stats` 응답 확인 후 `tools.manizu.blog`에서 생성·다운로드
-- [ ] 문서 반영: `README.md`(기능, 구조도, 환경 변수, AI 범위 문구), `DEPLOYMENT.md`(Windows ComfyUI 연결 절, IP는 자리 표시자), `AGENTS.md`(AI 범위 문구)
+- [x] 문서 반영: `README.md`(기능, 구조도, 환경 변수, AI 범위 문구), `DEPLOYMENT.md`(Windows ComfyUI 연결 절, IP는 자리 표시자), `AGENTS.md`(AI 범위 문구)
 
 테스트(외부 호출은 `httpx.MockTransport`로 대체):
 
@@ -138,7 +138,7 @@ Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 �
 
 완료 기준: `tools.manizu.blog`에서 한국어 프롬프트를 번역·확인한 뒤 생성한 이미지를 미리 보고 내려받을 수 있다. Windows PC나 ComfyUI가 꺼져 있으면 원인을 알 수 있는 오류가 표시된다.
 
-현재 상태: 설계 확정, 구현 전.
+현재 상태: 구현 완료(2026-09-25, 자동 테스트와 외부 서비스 없는 화면 확인). Windows 준비와 실제 연결·운영 검증이 남았다.
 
 ## 프로젝트 범위에서 제외
 
@@ -190,6 +190,7 @@ Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 �
 - `yt-dlp` 기반 유튜브 영상·MP3 다운로드, URL 제한 및 결과 파일 정리 구현
 - 수동·자동 자막 VTT 추출과 중복 문구 정리 구현
 - 다크 사이드바와 라임 포인트 중심의 반응형 UI로 개편
+- OpenAI 프롬프트 번역과 Windows ComfyUI(Tailscale) 연동 이미지 생성 메뉴 구현
 
 ### 검증 기록
 
@@ -215,6 +216,14 @@ Phase 0~2는 모두 완료했다. 남은 작업은 다음 다섯 가지이며 �
 - PDF·DOCX 텍스트 추출, OCR 성공 경로(Tesseract 호출은 가짜 함수로 대체), `ffmpeg`·`ffprobe` 누락 오류 검증
 - 병합 파일 브라우저 시나리오 11단계(Playwright/Chromium)와 첫 화면 `Cache-Control: no-cache` 응답 검증
 - 운영: 비인증 요청 401, 가정용 회선 프록시를 거친 영상·MP3·자막 다운로드 확인
+
+2026-09-25 (Phase 3 구현):
+
+- `pytest`: 90개 테스트 통과
+- ComfyUI 클라이언트: 템플릿 치환, 제출·폴링·다운로드 정상 흐름, 연결 실패, `node_errors`, 노드 미설치, 비 JSON 응답, 실행 오류, 시간 초과, 이미지 없는 결과, PNG 아닌 응답(모두 `httpx.MockTransport`)
+- 번역기: 따옴표·공백 제거, 키 누락, 401·429·500, 연결 실패, 빈 결과, 형식 오류
+- API: 빈·공백·2000자 초과 프롬프트의 한국어 422, 잘못된 크기, 오류별 502·503·504, PNG 저장·다운로드
+- 화면: 외부 서비스 미설정 상태에서 메뉴 전환, 오류 안내, 390px 폭 표시 확인(Playwright/Chromium)
 
 ### OCR 현황과 개선 메모
 
