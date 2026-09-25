@@ -27,6 +27,22 @@ class YoutubeDownloadError(Exception):
     """Raised when a YouTube download cannot be completed safely."""
 
 
+class SilentYtDlpLogger:
+    """Swallow yt-dlp output; even with quiet, its errors name the video in server logs."""
+
+    def debug(self, message: str) -> None:
+        pass
+
+    def info(self, message: str) -> None:
+        pass
+
+    def warning(self, message: str) -> None:
+        pass
+
+    def error(self, message: str) -> None:
+        pass
+
+
 @dataclass(frozen=True)
 class YoutubeDownloadResult:
     result_id: str
@@ -159,9 +175,11 @@ def _build_options(
         "cachedir": False,
         "fragment_retries": 3,
         "ignoreconfig": True,
+        "logger": SilentYtDlpLogger(),
         "match_filter": duration_filter,
         "max_filesize": settings.youtube_max_download_bytes,
         "noplaylist": True,
+        "noprogress": True,
         "no_warnings": True,
         "outtmpl": output_template,
         "overwrites": False,

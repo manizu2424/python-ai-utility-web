@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from yt_dlp import YoutubeDL as RealYoutubeDL
+from yt_dlp.utils import DownloadError
 
 from app.config import Settings, get_settings
 from app.main import app
@@ -136,6 +138,27 @@ def capture_download_options(tmp_path, monkeypatch, settings: Settings) -> dict:
     )
     download_youtube("https://youtu.be/abcdefghijk", "video", settings)
     return captured["options"]
+
+
+def assert_yt_dlp_output_hides_video_id(options: dict, capsys) -> None:
+    """Build a real YoutubeDL with our options and check nothing naming the video is printed."""
+    capsys.readouterr()
+    with RealYoutubeDL(options) as downloader:
+        downloader.to_screen("[youtube] SECRETVID01: Downloading webpage")
+        downloader.report_warning("[youtube] SECRETVID01: Some formats are missing")
+        with pytest.raises(DownloadError):
+            downloader.report_error("[youtube] SECRETVID01: This video is unavailable")
+    output = capsys.readouterr()
+    assert "SECRETVID01" not in output.out + output.err
+
+
+def test_download_youtube_keeps_video_ids_out_of_server_logs(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    options = capture_download_options(tmp_path, monkeypatch, make_settings(tmp_path))
+
+    assert options["noprogress"] is True
+    assert_yt_dlp_output_hides_video_id(options, capsys)
 
 
 def test_download_youtube_routes_through_configured_proxy(tmp_path, monkeypatch) -> None:

@@ -11,7 +11,10 @@ from app.services.youtube_transcript import (
     extract_youtube_transcript,
     parse_vtt,
 )
-from tests.test_youtube_downloader import make_settings
+from tests.test_youtube_downloader import (
+    assert_yt_dlp_output_hides_video_id,
+    make_settings,
+)
 
 
 def test_parse_vtt_removes_markup_and_rolling_duplicates() -> None:
@@ -176,3 +179,32 @@ def test_youtube_transcript_api_returns_downloadable_text(tmp_path, monkeypatch)
         assert download.text == "추출한 자막"
 
     get_settings.cache_clear()
+
+
+def test_extract_youtube_transcript_keeps_video_ids_out_of_server_logs(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    import yt_dlp
+    from yt_dlp.utils import DownloadError
+
+    captured: dict[str, dict] = {}
+
+    class FakeYoutubeDL:
+        def __init__(self, options) -> None:
+            captured["options"] = options
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback) -> None:
+            return None
+
+        def extract_info(self, url: str, download: bool):
+            raise DownloadError("unavailable")
+
+    monkeypatch.setattr(yt_dlp, "YoutubeDL", FakeYoutubeDL)
+    with pytest.raises(YoutubeTranscriptError):
+        extract_youtube_transcript("https://youtu.be/abcdefghijk", "auto", make_settings(tmp_path))
+
+    assert captured["options"]["noprogress"] is True
+    assert_yt_dlp_output_hides_video_id(captured["options"], capsys)

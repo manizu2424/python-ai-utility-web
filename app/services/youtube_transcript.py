@@ -7,7 +7,11 @@ from uuid import uuid4
 
 from app.config import Settings
 from app.services.storage import ensure_runtime_dirs
-from app.services.youtube_downloader import YoutubeDownloadError, normalize_youtube_url
+from app.services.youtube_downloader import (
+    SilentYtDlpLogger,
+    YoutubeDownloadError,
+    normalize_youtube_url,
+)
 
 
 TRANSCRIPT_LANGUAGES = {
@@ -60,7 +64,9 @@ def extract_youtube_transcript(
     options: dict[str, Any] = {
         "cachedir": False,
         "ignoreconfig": True,
+        "logger": SilentYtDlpLogger(),
         "noplaylist": True,
+        "noprogress": True,
         "no_warnings": True,
         "outtmpl": output_template,
         "quiet": True,
